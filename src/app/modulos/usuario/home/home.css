@@ -1,0 +1,246 @@
+:root {
+  --primary: #521E89;
+  --secondary: #763CB4;
+  --accent: #AC6EEF;
+  --soft: #D3AFFB;
+  --bg: #FAFAFA;
+}
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, #521E89 0%, #763CB4 60%, #FAFAFA 100%);
+  padding: 60px 5% 100px;
+  text-align: center;
+  color: #FFFFFF;
+}
+
+.hero-title {
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.hero-subtitle {
+  font-size: 16px;
+  color: #D3AFFB;
+  margin-bottom: 35px;
+}
+
+/* Buscador Flotante */
+.search-container {
+  max-width: 950px;
+  margin: -60px auto 50px;
+  background: #FFFFFF;
+  padding: 25px 30px;
+  border-radius: 16px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+  border: 1px solid #D3AFFB;
+}
+
+.search-tabs {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #521E89;
+}
+
+.search-tabs label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Grid dinámico: 4 columnas si es Solo ida, 5 columnas si es Ida y vuelta */
+.search-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) auto;
+  gap: 15px;
+  align-items: end;
+}
+
+.search-grid.has-return {
+  grid-template-columns: repeat(5, 1fr) auto;
+}
+
+@media (max-width: 850px) {
+  .search-grid, .search-grid.has-return { 
+    grid-template-columns: 1fr; 
+  }
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.field-group label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #521E89;
+  margin-bottom: 6px;
+}
+
+.field-group select, 
+.field-group input {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #D3AFFB;
+  border-radius: 8px;
+  background-color: #FAFAFA;
+  color: #521E89;
+  font-size: 13px;
+  outline: none;
+}
+
+.field-group select:focus, 
+.field-group input:focus {
+  border-color: #763CB4;
+}
+
+.field-group select:disabled {
+  background-color: #EFEFEF;
+  color: #888888;
+  cursor: not-allowed;
+}
+
+.btn-search {
+  height: 44px;
+  padding: 0 24px;
+  background-color: #521E89;
+  color: #FFF;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-search:hover { 
+  background-color: #763CB4; 
+}
+
+.alert-error {
+  background-color: #F8D7DA;
+  color: #721C24;
+  border: 1px solid #F5C6CB;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+/* Sección de Catálogo */
+.catalog-section {
+  max-width: 1100px;
+  margin: 0 auto 60px;
+  padding: 0 20px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.section-title {
+  font-size: 22px;
+  color: #521E89;
+  font-weight: 700;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
+}
+
+.card {
+  background: #FFFFFF;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #D3AFFB;
+  box-shadow: 0 6px 18px rgba(82, 30, 137, 0.06);
+  transition: transform 0.3s;
+}
+
+.card:hover { 
+  transform: translateY(-5px); 
+}
+
+.card-img {
+  height: 150px;
+  background-color: #D3AFFB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  color: #521E89;
+}
+
+.card-body {
+  padding: 20px;
+  text-align: left;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #521E89;
+  margin-bottom: 4px;
+}
+
+.card-price {
+  font-size: 15px;
+  font-weight: 700;
+  color: #AC6EEF;
+  margin-bottom: 15px;
+}
+
+.btn-card {
+  width: 100%;
+  padding: 10px;
+  background: #FAFAFA;
+  border: 1px solid #D3AFFB;
+  border-radius: 8px;
+  color: #521E89;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-card:hover { 
+  background: #D3AFFB; 
+}
+
+/* Chatbot Flotante */
+.chatbot-widget {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  width: 55px;
+  height: 55px;
+  background-color: #521E89;
+  color: #FFF;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 8px 20px rgba(82, 30, 137, 0.4);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.chatbot-widget:hover { 
+  transform: scale(1.1); 
+}

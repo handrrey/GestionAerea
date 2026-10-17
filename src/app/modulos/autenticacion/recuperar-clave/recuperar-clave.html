@@ -1,0 +1,39 @@
+<div class="pantalla-completa">
+  <div class="recovery-card">
+    <div class="icon-container">🔑</div>
+    <h1 class="title">¿Olvidaste tu clave?</h1>
+    <p class="subtitle">
+      Ingresa tu correo electrónico registrado y te enviaremos las instrucciones para restablecer tu contraseña.
+    </p>
+
+    <!-- Alerta de Error -->
+    <div *ngIf="mensajeError" class="alerta-error">
+      {{ mensajeError }}
+    </div>
+
+    <!-- Alerta de Éxito -->
+    <div *ngIf="mensajeExito" class="alerta-exito">
+      {{ mensajeExito }}
+    </div>
+
+    <form (ngSubmit)="alEnviar()">
+      <div class="form-group">
+        <label for="email">Correo electrónico</label>
+        <input 
+          type="email" 
+          id="email" 
+          [(ngModel)]="email" 
+          name="email" 
+          placeholder="ej. usuario@dominio.com" 
+          required 
+        />
+      </div>
+
+      <button type="submit" class="btn-submit">ENVIAR ENLACE</button>
+    </form>
+
+    <a routerLink="/inicio-sesion" class="back-link">
+      <span>←</span> Volver al Inicio de Sesión
+    </a>
+  </div>
+</div>

@@ -1,0 +1,192 @@
+<div class="admin-layout">
+  <!-- Sidebar Navegación Lateral -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">✈</div>
+      <span>Gestión Aérea</span>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li class="menu-item active">
+        <a routerLink="/admin/gestion-vuelos"><span>✈</span> Vuelos</a>
+      </li>
+      <li class="menu-item">
+        <a routerLink="/admin/noticias"><span>📢</span> Noticias y Promos</a>
+      </li>
+      <li class="menu-item">
+        <a routerLink="/admin/muro"><span>💬</span> Muro de Mensajes</a>
+      </li>
+      <li class="menu-item">
+        <a routerLink="/admin/historial-vuelos"><span>📊</span> Vuelos Realizados</a>
+      </li>
+      <li class="menu-item">
+        <a routerLink="/perfil"><span>⚙️</span> Perfil</a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="menu-item">
+        <a (click)="cerrarSesion()" style="cursor: pointer;"><span>🚪</span> Cerrar Sesión</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <!-- Topbar Superior -->
+    <header class="topbar">
+      <h1 class="topbar-title">Módulo de Administración de Vuelos</h1>
+      <div class="user-profile">
+        <span class="role-badge">{{ usuarioActual?.rol || 'ADMINISTRADOR' }}</span>
+        <span style="font-weight: 600; font-size: 14px;">{{ usuarioActual?.nombres || 'Administrador' }} {{ usuarioActual?.apellidos || '' }}</span>
+      </div>
+    </header>
+
+    <!-- Cuerpo del Dashboard -->
+    <div class="dashboard-body">
+      <!-- Botón de Acción Principal -->
+      <div class="action-bar">
+        <h2>Listado de Operaciones</h2>
+        <button class="btn-create" (click)="abrirModalNuevo()">+ PROGRAMAR NUEVO VUELO</button>
+      </div>
+
+      <!-- Tarjetas KPI -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-title">VUELOS PROGRAMADOS</div>
+          <div class="kpi-value">{{ vuelosProgramadosCount }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">PROMOCIONES ACTIVAS</div>
+          <div class="kpi-value">{{ promocionesActivasCount }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">MENSAJES SIN RESPONDER</div>
+          <div class="kpi-value">{{ mensajesSinResponderCount }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">VUELOS REALIZADOS</div>
+          <div class="kpi-value">{{ vuelosRealizadosCount }}</div>
+        </div>
+      </div>
+
+      <!-- Tabla de Vuelos -->
+      <div class="table-container">
+        <div class="table-header-title">Vuelos Vigentes</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Origen - Destino</th>
+              <th>Fecha y Hora</th>
+              <th>Precio Unitario</th>
+              <th>Reservas</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let vuelo of vuelos">
+              <td><strong>{{ vuelo.codigo }}</strong></td>
+              <td>{{ vuelo.origen }} → {{ vuelo.destino }}</td>
+              <td>{{ formatearFechaHora(vuelo.fechaHora) }}</td>
+              <td>$ {{ vuelo.precio | number:'1.0-0' }} COP</td>
+              <td>
+                <span class="badge-reservas" [class.has-reservas]="(vuelo.reservasCount ?? 0) > 0">
+                  {{ vuelo.reservasCount ?? 0 }} reserva(s)
+                </span>
+              </td>
+              <td>
+                <span class="status-tag" [ngClass]="{
+                  'status-scheduled': vuelo.estado === 'PROGRAMADO',
+                  'status-completed': vuelo.estado === 'REALIZADO',
+                  'status-cancelled': vuelo.estado === 'CANCELADO'
+                }">
+                  {{ vuelo.estado === 'PROGRAMADO' ? 'Programado' : (vuelo.estado === 'REALIZADO' ? 'Realizado' : 'Cancelado') }}
+                </span>
+              </td>
+              <td>
+                <button class="btn-action-edit" (click)="abrirModalEditar(vuelo)" [disabled]="vuelo.estado !== 'PROGRAMADO'" [style.opacity]="vuelo.estado !== 'PROGRAMADO' ? 0.5 : 1">
+                  Editar
+                </button>
+                <button class="btn-action-cancel" (click)="cancelarVuelo(vuelo.id)" *ngIf="vuelo.estado === 'PROGRAMADO'">
+                  Cancelar
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal Formulario Programar / Editar Vuelo -->
+<div class="modal-backdrop" *ngIf="mostrarModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>{{ editando ? 'Editar Vuelo' : 'Programar Nuevo Vuelo' }}</h3>
+      <button class="btn-close" (click)="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      
+      <!-- Aviso de Restricción si está editando -->
+      <div class="info-alert" *ngIf="editando">
+        <span *ngIf="(vueloForm.reservasCount ?? 0) > 0">
+          ⚠️ <strong>Vuelo con reservas:</strong> Solo se permite modificar el <strong>Precio Unitario</strong>.
+        </span>
+        <span *ngIf="(vueloForm.reservasCount ?? 0) === 0">
+          ℹ️ <strong>Vuelo sin reservas:</strong> Solo se permite modificar <strong>Fecha, Hora y Precio Unitario</strong>.
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label>Código del Vuelo</label>
+        <input type="text" [(ngModel)]="vueloForm.codigo" [disabled]="editando" placeholder="Ej. AV-103">
+      </div>
+
+      <!-- Desplegables Origen y Destino -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Origen</label>
+          <select [(ngModel)]="vueloForm.origen" (change)="onOrigenChange()" [disabled]="esOrigenDestinoDeshabilitado">
+            <option value="" disabled selected>Selecciona origen</option>
+            <option *ngFor="let ciudad of ciudades" [value]="ciudad">{{ ciudad }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Destino</label>
+          <select [(ngModel)]="vueloForm.destino" [disabled]="esOrigenDestinoDeshabilitado || !vueloForm.origen">
+            <option value="" disabled selected>Selecciona destino</option>
+            <option *ngFor="let ciudad of destinosDisponibles" [value]="ciudad">{{ ciudad }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Fecha, Hora y Precio -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha y Hora</label>
+          <input 
+            type="datetime-local" 
+            [(ngModel)]="vueloForm.fechaHora" 
+            [disabled]="esFechaHoraDeshabilitada"
+            [min]="minFechaHora"
+            [max]="maxFechaHora">
+        </div>
+        
+        <!-- El precio siempre se puede modificar -->
+        <div class="form-group">
+          <label>Precio Unitario (COP)</label>
+          <input type="number" [(ngModel)]="vueloForm.precio" placeholder="Ej. 250000">
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="cerrarModal()">Cancelar</button>
+      <button class="btn-create" (click)="guardarVuelo()">{{ editando ? 'Guardar Cambios' : 'Programar Vuelo' }}</button>
+    </div>
+  </div>
+</div>
