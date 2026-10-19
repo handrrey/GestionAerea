@@ -1,0 +1,110 @@
+<div class="profile-card" *ngIf="usuarioActual">
+  <div class="header-text">
+    <h1 class="title">Perfil de Usuario</h1>
+    <p class="subtitle">Gestiona y actualiza tus datos personales de cuenta</p>
+  </div>
+
+  <!-- Alertas de éxito o error -->
+  <div class="alert alert-success" *ngIf="mensajeExito">{{ mensajeExito }}</div>
+  <div class="alert alert-error" *ngIf="mensajeError">{{ mensajeError }}</div>
+
+  <form (ngSubmit)="guardarCambios()">
+    
+    <!-- Sección Avatar -->
+    <div class="avatar-upload">
+      <div class="avatar-circle" (click)="fotoInput.click()">
+        <img *ngIf="imagenPreview" [src]="imagenPreview" alt="Foto perfil" class="avatar-img">
+        <span *ngIf="!imagenPreview">👤</span>
+      </div>
+      <span class="avatar-label" (click)="fotoInput.click()" style="cursor: pointer;">Cambiar foto de perfil</span>
+      <input type="file" #fotoInput (change)="onFotoSeleccionada($event)" accept="image/*" hidden>
+    </div>
+
+    <!-- Formulario Grid -->
+    <div class="form-grid">
+      
+      <!-- Cédula (Bloqueado) -->
+      <div class="form-group full-width">
+        <label for="cc">DNI / Cédula <span>🔒 (Dato Protegido)</span></label>
+        <input type="text" id="cc" [value]="usuarioActual.cc" disabled>
+      </div>
+
+      <!-- Nombre de Usuario (Bloqueado) -->
+      <div class="form-group full-width">
+        <label for="username">Usuario <span>🔒 (Dato Protegido)</span></label>
+        <input type="text" id="username" [value]="usuarioActual.username" disabled>
+      </div>
+
+      <!-- Nombres (Bloqueado) -->
+      <div class="form-group">
+        <label for="names">Nombres</label>
+        <input type="text" id="names" [value]="usuarioActual.nombres" disabled>
+      </div>
+
+      <!-- Apellidos (Bloqueado) -->
+      <div class="form-group">
+        <label for="surnames">Apellidos</label>
+        <input type="text" id="surnames" [value]="usuarioActual.apellidos" disabled>
+      </div>
+
+      <!-- Fecha de Nacimiento (Bloqueado) -->
+      <div class="form-group">
+        <label for="fechaNacimiento">Fecha de Nacimiento</label>
+        <input type="text" id="fechaNacimiento" [value]="usuarioActual.fechaNacimiento || 'No registrada'" disabled>
+      </div>
+
+      <!-- Lugar de Nacimiento (Bloqueado) -->
+      <div class="form-group">
+        <label for="birthplace">Lugar de Nacimiento</label>
+        <input type="text" id="birthplace" [value]="usuarioActual.lugarNacimiento || 'No registrado'" disabled>
+      </div>
+
+      <!-- Género (Bloqueado) -->
+      <div class="form-group full-width">
+        <label for="genero">Género</label>
+        <input type="text" id="genero" [value]="usuarioActual.genero || 'No especificado'" disabled>
+      </div>
+
+      <!-- Correo Electrónico (EDITABLE) -->
+      <div class="form-group full-width">
+        <label for="email">Correo Electrónico *</label>
+        <input type="email" id="email" [(ngModel)]="emailEdit" name="email" required>
+      </div>
+
+      <!-- Dirección de Facturación (EDITABLE) -->
+      <div class="form-group full-width">
+        <label for="address">Dirección de Facturación *</label>
+        <input type="text" id="address" [(ngModel)]="direccionEdit" name="address" required>
+      </div>
+
+      <!-- Nueva Contraseña (EDITABLE) -->
+      <div class="form-group">
+        <label for="password">Nueva Contraseña</label>
+        <input type="password" id="password" [(ngModel)]="passwordNueva" name="password" placeholder="••••••••">
+      </div>
+
+      <!-- Confirmar Contraseña (EDITABLE) -->
+      <div class="form-group">
+        <label for="confirm-password">Confirmar Contraseña</label>
+        <input type="password" id="confirm-password" [(ngModel)]="confirmarPassword" name="confirmPassword" placeholder="••••••••">
+      </div>
+
+      <!-- Suscripción -->
+      <div class="form-group full-width">
+        <div class="checkbox-group">
+          <input type="checkbox" id="news" [(ngModel)]="suscritoNoticiasEdit" name="news" style="accent-color: var(--accent);">
+          <label for="news" style="margin: 0; font-weight: 500;">Suscrito al sistema de noticias y promociones</label>
+        </div>
+      </div>
+
+      <!-- Botones -->
+      <div class="form-group full-width">
+        <div class="button-group">
+          <button type="button" class="btn-cancel" (click)="cancelar()">CANCELAR</button>
+          <button type="submit" class="btn-save">GUARDAR CAMBIOS</button>
+        </div>
+      </div>
+
+    </div>
+  </form>
+</div>

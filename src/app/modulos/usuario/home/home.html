@@ -1,0 +1,136 @@
+<!-- Hero Section con Gradiente -->
+<header class="hero-section">
+  <h1 class="hero-title">¡Encuentra tu próximo destino!</h1>
+  <p class="hero-subtitle">Reserva y compra tiquetes nacionales e internacionales al mejor precio</p>
+</header>
+
+<!-- Buscador Principal Flotante -->
+<div class="search-container">
+  
+  <!-- Selección de Tipo de Viaje -->
+  <div class="search-tabs">
+    <label>
+      <input 
+        type="radio" 
+        name="trip" 
+        [checked]="tipoViaje === 'IDA_Y_VUELTA'" 
+        (change)="seleccionarTipoViaje('IDA_Y_VUELTA')"
+        style="accent-color: var(--accent);"> 
+      Ida y vuelta
+    </label>
+    <label>
+      <input 
+        type="radio" 
+        name="trip" 
+        [checked]="tipoViaje === 'SOLO_IDA'" 
+        (change)="seleccionarTipoViaje('SOLO_IDA')"
+        style="accent-color: var(--accent);"> 
+      Solo ida
+    </label>
+  </div>
+
+  <!-- Alerta de Error de Validación -->
+  <div class="alert-error" *ngIf="mensajeError">
+    ⚠️ {{ mensajeError }}
+  </div>
+
+  <!-- Formulario Grid (Se ajusta dinámicamente según 'tipoViaje') -->
+  <form (ngSubmit)="buscarVuelos()">
+    <div class="search-grid" [class.has-return]="tipoViaje === 'IDA_Y_VUELTA'">
+      
+      <!-- Campo 1: Origen -->
+      <div class="field-group">
+        <label>Origen</label>
+        <select [(ngModel)]="origenSeleccionado" name="origen" (change)="onOrigenChange()" required>
+          <option value="" disabled selected>Selecciona origen</option>
+          <option *ngFor="let ciudad of ciudades" [value]="ciudad">{{ ciudad }}</option>
+        </select>
+      </div>
+
+      <!-- Campo 2: Destino -->
+      <div class="field-group">
+        <label>Destino</label>
+        <select [(ngModel)]="destinoSeleccionado" name="destino" [disabled]="!origenSeleccionado" required>
+          <option value="" disabled selected>Selecciona destino</option>
+          <option *ngFor="let ciudad of destinosDisponibles" [value]="ciudad">{{ ciudad }}</option>
+        </select>
+      </div>
+
+      <!-- Campo 3: Fecha de Salida -->
+      <div class="field-group">
+        <label>Fecha de Salida</label>
+        <input 
+          type="date" 
+          [(ngModel)]="fechaIda" 
+          name="fechaIda"
+          [min]="minFecha" 
+          [max]="maxFecha" 
+          required>
+      </div>
+
+      <!-- Campo 4 (OPCIONAL): Fecha de Regreso (Aparece únicamente si es 'Ida y vuelta') -->
+      <div class="field-group" *ngIf="tipoViaje === 'IDA_Y_VUELTA'">
+        <label>Fecha de Regreso</label>
+        <input 
+          type="date" 
+          [(ngModel)]="fechaVuelta" 
+          name="fechaVuelta"
+          [min]="fechaIda || minFecha" 
+          [max]="maxFecha" 
+          required>
+      </div>
+
+      <!-- Campo 5: Rango de Precio -->
+      <div class="field-group">
+        <label>Rango de Precio</label>
+        <select [(ngModel)]="rangoPrecio" name="rangoPrecio">
+          <option value="Cualquiera">Cualquier precio</option>
+          <option value="1000000">Hasta $1'000.000 COP</option>
+          <option value="3000000">Hasta $3'000.000 COP</option>
+        </select>
+      </div>
+
+      <!-- Botón de Búsqueda -->
+      <button type="submit" class="btn-search">BUSCAR</button>
+    </div>
+  </form>
+</div>
+
+<!-- Catálogo de Promociones (Módulo de Noticias) -->
+<section class="catalog-section">
+  <div class="section-header">
+    <h2 class="section-title">Promociones y Vuelos Destacados</h2>
+  </div>
+
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-img">🌆</div>
+      <div class="card-body">
+        <h3 class="card-title">Madrid, España</h3>
+        <p class="card-price">Desde $3'200.000 COP</p>
+        <button class="btn-card">Ver detalles</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-img">🏖️</div>
+      <div class="card-body">
+        <h3 class="card-title">Cartagena, Colombia</h3>
+        <p class="card-price">Desde $220.000 COP</p>
+        <button class="btn-card">Ver detalles</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-img">🗽</div>
+      <div class="card-body">
+        <h3 class="card-title">New York, USA</h3>
+        <p class="card-price">Desde $2'650.000 COP</p>
+        <button class="btn-card">Ver detalles</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Widget del Chatbot Flotante -->
+<div class="chatbot-widget" title="Asistente de ayuda">💬</div>

@@ -1,0 +1,113 @@
+<div class="root-layout">
+  <!-- Sidebar Root -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">✈</div>
+      <span>Gestión Aérea</span>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li class="menu-item active">
+        <a routerLink="/gestion-administradores"><span>👥</span> Administradores</a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="menu-item">
+        <a (click)="cerrarSesion()" style="cursor: pointer;"><span>🚪</span> Cerrar Sesión</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <!-- Topbar -->
+    <header class="topbar">
+      <h1 class="topbar-title">Consola de Control Root (Superusuario)</h1>
+      <div class="user-profile">
+        <span class="role-badge-root">SUPERUSER / ROOT</span>
+        <span style="font-weight: 600; font-size: 14px;">{{ usuarioActual?.username }}</span>
+      </div>
+    </header>
+
+    <!-- Cuerpo del Dashboard -->
+    <div class="dashboard-body">
+      <!-- Botón de Acción Principal -->
+      <div class="action-bar">
+        <h2>Gestión de Personal Administrativo</h2>
+        <button class="btn-create" (click)="toggleFormulario()">
+          {{ mostrarFormulario ? 'CANCELAR' : '+ CREAR USUARIO ADMINISTRADOR' }}
+        </button>
+      </div>
+
+      <!-- Formulario para Crear Administrador (Modal / Desplegable) -->
+      <div *ngIf="mostrarFormulario" class="modal-form-container">
+        <h3>Registrar Nuevo Administrador</h3>
+        <form (ngSubmit)="crearAdmin()" class="form-grid-modal">
+          <input type="text" [(ngModel)]="nuevoAdmin.cc" name="cc" placeholder="CC / Documento" required />
+          <input type="text" [(ngModel)]="nuevoAdmin.nombres" name="nombres" placeholder="Nombres" required />
+          <input type="text" [(ngModel)]="nuevoAdmin.apellidos" name="apellidos" placeholder="Apellidos" required />
+          <input type="date" [(ngModel)]="nuevoAdmin.fechaNacimiento" name="fechaNacimiento" placeholder="Fecha de Nacimiento" required />
+          <input type="text" [(ngModel)]="nuevoAdmin.lugarNacimiento" name="lugarNacimiento" placeholder="Lugar de Nacimiento" required />
+
+          <div class="form-group">
+          <select [(ngModel)]="nuevoAdmin.genero" name="genero" placeholder="Género" required>
+            <option value="" disabled selected>Seleccionar Género</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Femenino">Femenino</option>
+            <option value="Otro">Otro</option>
+          </select>
+          </div>
+
+          <input type="text" [(ngModel)]="nuevoAdmin.direccionFacturacion" name="direccionFacturacion" placeholder="Dirección" required />
+          <input type="email" [(ngModel)]="nuevoAdmin.email" name="email" placeholder="Correo Electrónico" required />
+          <input type="text" [(ngModel)]="nuevoAdmin.username" name="username" placeholder="Usuario" required />
+          <input type="password" [(ngModel)]="nuevoAdmin.password" name="password" placeholder="Contraseña" required />
+          <button type="submit" class="btn-save-modal">Guardar Administrador</button>
+        </form>
+      </div>
+
+      <!-- Tarjetas KPI -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-title">ADMINISTRADORES ACTIVOS</div>
+          <div class="kpi-value">{{ administradores.length }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">ESTADO DE LA CUENTA ROOT</div>
+          <div class="kpi-value" style="font-size: 18px; color: #385723;">Protegida / Activa</div>
+        </div>
+      </div>
+
+      <!-- Tabla de Administradores -->
+      <div class="table-container">
+        <div class="table-header-title">Listado de Usuarios Administradores Registrados</div>
+        <table>
+          <thead>
+            <tr>
+              <th>CC / ID</th>
+              <th>Nombre Completo</th>
+              <th>Usuario</th>
+              <th>Correo Electrónico</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let admin of administradores">
+              <td><strong>{{ admin.cc }}</strong></td>
+              <td>{{ admin.nombres }} {{ admin.apellidos }}</td>
+              <td>{{ admin.username }}</td>
+              <td>{{ admin.email }}</td>
+              <td>
+                <button class="btn-action-delete" (click)="eliminarAdmin(admin.id)">Eliminar Account</button>
+              </td>
+            </tr>
+            <tr *ngIf="administradores.length === 0">
+              <td colspan="5" style="text-align: center; color: #888;">No hay administradores registrados aún.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>

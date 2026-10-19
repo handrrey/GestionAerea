@@ -1,0 +1,30 @@
+<!-- La barra superior se muestra si NO hay usuario o si el rol NO es ADMINISTRADOR ni ROOT -->
+<nav class="navbar" *ngIf="!usuarioActual || (usuarioActual.rol !== 'ADMINISTRADOR' && usuarioActual.rol !== 'ROOT')">
+  <div class="brand" routerLink="/home">
+    <div class="brand-icon">✈</div>
+    <span>Gestión Aérea</span>
+  </div>
+
+  <ul class="nav-links">
+    <li><a routerLink="/home">Inicio</a></li>
+    <li><a routerLink="/inicio-sesion">Buscar Vuelos</a></li>
+    <li><a routerLink="/inicio-sesion">Noticias y Promos</a></li>
+    <li *ngIf="usuarioActual && usuarioActual.rol === 'CLIENTE'">
+      <a routerLink="/perfil">Mi Perfil</a>
+    </li>
+  </ul>
+
+  <div class="nav-actions">
+    <!-- Si no hay usuario logueado -->
+    <ng-container *ngIf="!usuarioActual">
+      <a routerLink="/inicio-sesion" class="btn-outline">Iniciar Sesión</a>
+      <a routerLink="/registro" class="btn-solid">Registrarse</a>
+    </ng-container>
+
+    <!-- Si el usuario es un cliente autenticado -->
+    <ng-container *ngIf="usuarioActual && usuarioActual.rol === 'CLIENTE'">
+      <span class="user-greeting">Hola, <strong>{{ usuarioActual.nombres }}</strong></span>
+      <button (click)="cerrarSesion()" class="btn-outline">Cerrar Sesión</button>
+    </ng-container>
+  </div>
+</nav>
