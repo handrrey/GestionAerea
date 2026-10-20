@@ -88,23 +88,22 @@ export class AutenticacionService {
 
   // Historia 1: Iniciar sesión con JWT (listo)
   iniciarSesion(usuarioOEmail: string, clave: string): Observable<LoginResponse> {
-  const body = { correo: usuarioOEmail, contrasena: clave };
+    const body = { correo: usuarioOEmail, contrasena: clave };
 
-  return this.http.post<any>(`${this.API_URL}/login`, body).pipe(
-    tap(respuesta => {
-      // Usamos respuesta.access_token o respuesta.token (con respaldo)
-      const token = respuesta.access_token || respuesta.token;
-      
-      localStorage.setItem(this.LLAVE_TOKEN, token);
-      localStorage.setItem(this.LLAVE_USUARIO_ACTUAL, JSON.stringify(respuesta.usuario));
-      this.usuarioCambioSubject.next(respuesta.usuario);
-    })
-  );
-}
+    return this.http.post<any>(`${this.API_URL}/login`, body).pipe(
+      tap(respuesta => {
+        // Usamos respuesta.access_token o respuesta.token (con respaldo)
+        const token = respuesta.access_token || respuesta.token;
+        
+        localStorage.setItem(this.LLAVE_TOKEN, token);
+        localStorage.setItem(this.LLAVE_USUARIO_ACTUAL, JSON.stringify(respuesta.usuario));
+        this.usuarioCambioSubject.next(respuesta.usuario);
+      })
+    );
+  }
 
   // Historia 2: Registrar un cliente (listo)
   registrarCliente(nuevoUsuario: Usuario): Observable<Usuario> {
-
     const payloadBackend = {
       usuario: nuevoUsuario.usuario,
       password: nuevoUsuario.password,
@@ -131,9 +130,9 @@ export class AutenticacionService {
   }
 
 // Historia 4: Recuperar contraseña
-recuperarClave(email: string): Observable<any> {
-  return this.http.post(`${this.API_URL}/autenticacion/recuperar-clave`, { email });
-}
+  recuperarClave(email: string): Observable<any> {
+    return this.http.post(`${this.API_URL}/autenticacion/recuperar-clave`, { email });
+  }
 
   // Historia 7: Crear un Administrador (Solo ROOT) (listo sin validacion de solo root)
   crearAdministrador(nuevoAdmin: Usuario): Observable<Usuario> {
@@ -142,20 +141,20 @@ recuperarClave(email: string): Observable<any> {
 
   // Historia 8: Eliminar Administrador (Solo ROOT)
   eliminarAdministrador(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.API_URL}/administracion/eliminar-admin/${id}`);
+    return this.http.delete<void>(`${this.API_URL}/usuario/${id}`);
   }
 
 // Historia 9: Ver lista de administradores (listo)
-obtenerAdministradores(): Observable<Usuario[]> {
-  const token = this.obtenerToken();
-  const headers = new HttpHeaders({
-    'Authorization': `Bearer ${token}`
-  });
+  obtenerAdministradores(): Observable<Usuario[]> {
+    const token = this.obtenerToken();
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
 
-  return this.http.get<Usuario[]>(`${this.API_URL}/usuario/listaAdministradores`, { headers });
-}
+    return this.http.get<Usuario[]>(`${this.API_URL}/usuario/listaAdministradores`, { headers });
+  }
 
-  // Historias 5 y 6: Editar perfil
+  // Historias 5 y 6: Editar perfil (listo)
   actualizarPerfil(usuarioActualizado: Usuario): Observable<Usuario> {
     return this.http.patch<Usuario>(`${this.API_URL}/usuario`, usuarioActualizado).pipe(
       tap(usuarioResp => {
