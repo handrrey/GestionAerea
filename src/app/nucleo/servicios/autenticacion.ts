@@ -105,9 +105,9 @@ export class AutenticacionService {
   // Historia 2: Registrar un cliente (listo)
   registrarCliente(nuevoUsuario: Usuario): Observable<Usuario> {
     const payloadBackend = {
-      usuario: nuevoUsuario.usuario,
+      username: nuevoUsuario.usuario,
       password: nuevoUsuario.password,
-      correo: nuevoUsuario.correo,
+      email: nuevoUsuario.correo,
       rol: nuevoUsuario.rol,
       
       // Convertimos explícitamente el string de la cédula a un número entero
