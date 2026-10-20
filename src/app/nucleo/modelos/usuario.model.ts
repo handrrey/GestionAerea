@@ -1,4 +1,4 @@
-export type RolUsuario = 'ROOT' | 'ADMINISTRADOR' | 'CLIENTE' | 'VISITANTE';
+export type RolUsuario = 'ROOT' | 'ADMIN' | 'CLIENTE' | 'VISITANTE';
 
 export interface Usuario {
   id_usuario?: number;

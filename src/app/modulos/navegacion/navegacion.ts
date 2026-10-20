@@ -39,7 +39,7 @@ export class NavegacionComponent implements OnInit, OnDestroy {
     if (!this.usuarioActual) {
       return true; // Para visitantes / sin sesión debe ser true
     }
-    return this.usuarioActual.rol !== 'ADMINISTRADOR' && this.usuarioActual.rol !== 'ROOT';
+    return this.usuarioActual.rol !== 'ADMIN' && this.usuarioActual.rol !== 'ROOT';
   }
 
   cerrarSesion(): void {

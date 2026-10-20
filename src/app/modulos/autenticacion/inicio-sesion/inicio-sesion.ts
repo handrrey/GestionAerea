@@ -37,7 +37,7 @@ alIngresar(): void {
 
         if (usuarioLogueado.rol === 'ROOT') {
           window.location.href = '/gestion-administradores';
-        } else if (usuarioLogueado.rol === 'ADMINISTRADOR') {
+        } else if (usuarioLogueado.rol === 'ADMIN') {
           window.location.href = '/gestion-vuelos';
         } else {
           window.location.href = '/home';

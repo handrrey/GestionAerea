@@ -24,7 +24,7 @@ export class GestionAdministradoresComponent implements OnInit {
     email: '',
     username: '',
     password: '',
-    rol: 'ADMINISTRADOR'
+    rol: 'ADMIN'
   };
 
   constructor(
@@ -87,7 +87,7 @@ export class GestionAdministradoresComponent implements OnInit {
         email: '', 
         username: '', 
         password: '', 
-        rol: 'ADMINISTRADOR' 
+        rol: 'ADMIN' 
       };
       
       this.mostrarFormulario = false;

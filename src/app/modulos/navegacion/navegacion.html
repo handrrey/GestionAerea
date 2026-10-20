@@ -1,5 +1,5 @@
 <!-- La barra superior se muestra si NO hay usuario o si el rol NO es ADMINISTRADOR ni ROOT -->
-<nav class="navbar" *ngIf="!usuarioActual || (usuarioActual.rol !== 'ADMINISTRADOR' && usuarioActual.rol !== 'ROOT')">
+<nav class="navbar" *ngIf="!usuarioActual || (usuarioActual.rol !== 'ADMIN' && usuarioActual.rol !== 'ROOT')">
   <div class="brand" routerLink="/home">
     <div class="brand-icon">✈</div>
     <span>Gestión Aérea</span>

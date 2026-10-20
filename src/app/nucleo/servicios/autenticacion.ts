@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Usuario } from '../modelos/usuario.model';
 import { Subject, Observable, tap } from 'rxjs';
 
 export interface LoginResponse {
+  access_token: string;
   token: string;
   usuario: Usuario;
 }
@@ -73,21 +74,23 @@ export class AutenticacionService {
     }
   }
 
-  // Historia 1: Iniciar sesión con JWT
+  // Historia 1: Iniciar sesión con JWT (listo)
   iniciarSesion(usuarioOEmail: string, clave: string): Observable<LoginResponse> {
-    const body = { correo: usuarioOEmail, contrasena: clave };
+  const body = { correo: usuarioOEmail, contrasena: clave };
 
-    return this.http.post<LoginResponse>(`${this.API_URL}/login`, body).pipe(
-      tap(respuesta => {
-        // Guardamos el token JWT y los datos del usuario devueltos por el backend
-        localStorage.setItem(this.LLAVE_TOKEN, respuesta.token);
-        localStorage.setItem(this.LLAVE_USUARIO_ACTUAL, JSON.stringify(respuesta.usuario));
-        this.usuarioCambioSubject.next(respuesta.usuario);
-      })
-    );
-  }
+  return this.http.post<any>(`${this.API_URL}/login`, body).pipe(
+    tap(respuesta => {
+      // Usamos respuesta.access_token o respuesta.token (con respaldo)
+      const token = respuesta.access_token || respuesta.token;
+      
+      localStorage.setItem(this.LLAVE_TOKEN, token);
+      localStorage.setItem(this.LLAVE_USUARIO_ACTUAL, JSON.stringify(respuesta.usuario));
+      this.usuarioCambioSubject.next(respuesta.usuario);
+    })
+  );
+}
 
-  // Historia 2: Registrar un cliente
+  // Historia 2: Registrar un cliente (listo)
   registrarCliente(nuevoUsuario: Usuario): Observable<Usuario> {
 
     const payloadBackend = {
@@ -122,7 +125,7 @@ recuperarClave(email: string): Observable<any> {
 
   // Historia 7: Crear un Administrador (Solo ROOT)
   crearAdministrador(nuevoAdmin: Usuario): Observable<Usuario> {
-    return this.http.post<Usuario>(`${this.API_URL}/administracion/crear-admin`, nuevoAdmin);
+    return this.http.post<Usuario>(`${this.API_URL}/usuario`, nuevoAdmin);
   }
 
   // Historia 8: Eliminar Administrador (Solo ROOT)
@@ -132,7 +135,12 @@ recuperarClave(email: string): Observable<any> {
 
 // Historia 9: Ver lista de administradores
 obtenerAdministradores(): Observable<Usuario[]> {
-  return this.http.get<Usuario[]>(`${this.API_URL}/administracion/lista-administradores`);
+  const token = this.obtenerToken();
+  const headers = new HttpHeaders({
+    'Authorization': `Bearer ${token}`
+  });
+
+  return this.http.get<Usuario[]>(`${this.API_URL}/usuario/listaAdministradores`, { headers });
 }
 
   // Historias 5 y 6: Editar perfil
