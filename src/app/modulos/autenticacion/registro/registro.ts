@@ -14,7 +14,7 @@ import { Usuario } from '../../../nucleo/modelos/usuario.model';
 })
 export class RegistroComponent {
   nuevoUsuario: Usuario = {
-    cc: '',
+    cc: 0,
     nombres: '',
     apellidos: '',
     fechaNacimiento: '',
@@ -26,7 +26,7 @@ export class RegistroComponent {
     password: '',
     imagenUrl: '',
     rol: 'CLIENTE',
-    suscritoNoticias: false
+    //suscritoNoticias: false
   };
 
   mensajeError: string = '';

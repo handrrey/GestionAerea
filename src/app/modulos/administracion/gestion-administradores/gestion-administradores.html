@@ -44,7 +44,7 @@
       <div *ngIf="mostrarFormulario" class="modal-form-container">
         <h3>Registrar Nuevo Administrador</h3>
         <form (ngSubmit)="crearAdmin()" class="form-grid-modal">
-          <input type="text" [(ngModel)]="nuevoAdmin.cc" name="cc" placeholder="CC / Documento" required />
+          <input type="number" [(ngModel)]="nuevoAdmin.cc" name="cc" placeholder="CC / Documento" required />
           <input type="text" [(ngModel)]="nuevoAdmin.nombres" name="nombres" placeholder="Nombres" required />
           <input type="text" [(ngModel)]="nuevoAdmin.apellidos" name="apellidos" placeholder="Apellidos" required />
           <input type="date" [(ngModel)]="nuevoAdmin.fechaNacimiento" name="fechaNacimiento" placeholder="Fecha de Nacimiento" required />
@@ -99,7 +99,7 @@
               <td>{{ admin.username }}</td>
               <td>{{ admin.email }}</td>
               <td>
-                <button class="btn-action-delete" (click)="eliminarAdmin(admin.id)">Eliminar Account</button>
+                <button class="btn-action-delete" (click)="eliminarAdmin(admin.id_usuario)">Eliminar Account</button>
               </td>
             </tr>
             <tr *ngIf="administradores.length === 0">

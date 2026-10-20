@@ -18,7 +18,7 @@ export class GestionAdministradoresComponent implements OnInit {
   usuarioActual: Usuario | null = null;
 
   nuevoAdmin: Usuario = {
-    cc: '',
+    cc: 0,
     nombres: '',
     apellidos: '',
     email: '',
@@ -81,7 +81,7 @@ export class GestionAdministradoresComponent implements OnInit {
       
       // Limpiamos el formulario
       this.nuevoAdmin = { 
-        cc: '', 
+        cc: 0, 
         nombres: '', 
         apellidos: '', 
         email: '', 

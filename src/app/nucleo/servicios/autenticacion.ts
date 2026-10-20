@@ -12,7 +12,7 @@ export interface LoginResponse {
   providedIn: 'root'
 })
 export class AutenticacionService {
-  private API_URL = 'http://localhost:3000/api'; // Cambiar a URL real del backend 
+  private API_URL = 'http://localhost:3000/appV1'; // Cambiar a URL real del backend 
   private LLAVE_USUARIOS = 'app_usuarios';
   private LLAVE_USUARIO_ACTUAL = 'app_usuario_actual';
   private LLAVE_TOKEN = 'jwt_token';
@@ -30,8 +30,7 @@ export class AutenticacionService {
     if (!localStorage.getItem(this.LLAVE_USUARIOS)) {
       const usuariosPorDefecto: Usuario[] = [
         {
-          id: 1,
-          cc: '00000000',
+          cc: 0,
           nombres: 'Usuario',
           apellidos: 'Root Sistema',
           email: 'root@aerolinea.com',
@@ -76,9 +75,9 @@ export class AutenticacionService {
 
   // Historia 1: Iniciar sesión con JWT
   iniciarSesion(usuarioOEmail: string, clave: string): Observable<LoginResponse> {
-    const body = { usernameOrEmail: usuarioOEmail, password: clave };
+    const body = { correo: usuarioOEmail, contrasena: clave };
 
-    return this.http.post<LoginResponse>(`${this.API_URL}/autenticacion/inicio-sesion`, body).pipe(
+    return this.http.post<LoginResponse>(`${this.API_URL}/login`, body).pipe(
       tap(respuesta => {
         // Guardamos el token JWT y los datos del usuario devueltos por el backend
         localStorage.setItem(this.LLAVE_TOKEN, respuesta.token);
@@ -90,7 +89,30 @@ export class AutenticacionService {
 
   // Historia 2: Registrar un cliente
   registrarCliente(nuevoUsuario: Usuario): Observable<Usuario> {
-    return this.http.post<Usuario>(`${this.API_URL}/autenticacion/registro`, nuevoUsuario);
+
+    const payloadBackend = {
+      username: nuevoUsuario.username,
+      password: nuevoUsuario.password,
+      email: nuevoUsuario.email,
+      rol: nuevoUsuario.rol,
+      
+      // Convertimos explícitamente el string de la cédula a un número entero
+      cc: Number(nuevoUsuario.cc), 
+      
+      nombres: nuevoUsuario.nombres,
+      apellidos: nuevoUsuario.apellidos,
+      
+      // Aseguramos que los campos no se envíen vacíos si el usuario no los llenó
+      fechaNacimiento: nuevoUsuario.fechaNacimiento || "2000-01-01", 
+      lugarNacimiento: nuevoUsuario.lugarNacimiento || "No especificado",
+      direccionFacturacion: nuevoUsuario.direccionFacturacion || "No especificada",
+      genero: nuevoUsuario.genero || "No especificado",
+      imagenUrl: nuevoUsuario.imagenUrl || "sin-imagen"
+    };
+
+
+
+    return this.http.post<Usuario>(`${this.API_URL}/usuario`, payloadBackend);
   }
 
 // Historia 4: Recuperar contraseña

@@ -1,8 +1,8 @@
 export type RolUsuario = 'ROOT' | 'ADMINISTRADOR' | 'CLIENTE' | 'VISITANTE';
 
 export interface Usuario {
-  id?: number;
-  cc: string;
+  id_usuario?: number;
+  cc: number;
   nombres: string;
   apellidos: string;
   fechaNacimiento?: string;
@@ -13,6 +13,6 @@ export interface Usuario {
   username: string;
   password?: string;
   imagenUrl?: string;
-  rol: RolUsuario;
   suscritoNoticias?: boolean;
+  rol: RolUsuario;
 }
