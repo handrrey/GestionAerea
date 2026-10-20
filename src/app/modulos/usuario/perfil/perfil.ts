@@ -41,16 +41,42 @@ export class PerfilComponent implements OnInit {
   cargarDatosUsuario(): void {
     this.usuarioActual = this.authService.obtenerUsuarioActual();
 
-    if (!this.usuarioActual) {
+    if (!this.usuarioActual || !this.usuarioActual.id_usuario) {
       this.router.navigate(['/inicio-sesion']);
       return;
     }
 
-    // Inicializar campos con datos actuales del usuario
-    this.emailEdit = this.usuarioActual.correo || '';
-    this.direccionEdit = this.usuarioActual.direccionFacturacion || '';
-    this.suscritoNoticiasEdit = !!this.usuarioActual.suscritoNoticias;
-    this.imagenPreview = this.usuarioActual.imagenUrl || null;
+    // Petición HTTP al backend
+    this.authService.obtenerPerfilUsuario(this.usuarioActual.id_usuario).subscribe({
+      next: (resBackend: any) => {
+        const perfil = resBackend.informacionPerfil;
+
+        // 1. Mapeamos los datos del backend a la estructura plana de usuario.model.ts
+        const usuarioMapeado: Usuario = {
+          ...resBackend,
+          cc: perfil?.dni,
+          nombres: perfil?.nombres,
+          apellidos: perfil?.apellidos,
+          fechaNacimiento: perfil?.fecha_nacimiento,
+          lugarNacimiento: perfil?.lugar_nacimiento,
+          direccionFacturacion: perfil?.direccion_facturacion,
+          genero: perfil?.genero,
+          imagenUrl: perfil?.foto_url
+        };
+
+        this.usuarioActual = usuarioMapeado;
+
+        // 2. Asignamos los campos editables usando el objeto recién mapeado
+        this.emailEdit = usuarioMapeado.correo || '';
+        this.direccionEdit = usuarioMapeado.direccionFacturacion || '';
+        this.suscritoNoticiasEdit = !!usuarioMapeado.suscritoNoticias;
+        this.imagenPreview = usuarioMapeado.imagenUrl || null;
+      },
+      error: (err) => {
+        console.error('Error al obtener perfil completo:', err);
+        this.mensajeError = 'No se pudieron cargar los datos del usuario.';
+      }
+    });
   }
 
   // Cargar foto de perfil e instanciar previsualización
@@ -78,7 +104,6 @@ export class PerfilComponent implements OnInit {
 
     if (!this.usuarioActual) return;
 
-    // 1. Validaciones básicas de campos vacíos
     if (!this.emailEdit.trim()) {
       this.mensajeError = 'El correo electrónico no puede estar vacío.';
       return;
@@ -89,42 +114,32 @@ export class PerfilComponent implements OnInit {
       return;
     }
 
-    // 2. Validaciones de Contraseña
-    if (this.passwordNueva.trim() !== '') {
-      // Regla A: Que sea diferente a la contraseña actual
-      if (this.passwordNueva === this.usuarioActual.password) {
-        this.mensajeError = 'La nueva contraseña no puede ser igual a la contraseña anterior.';
-        return;
-      }
-
-      // Regla B: Que coincida con la confirmación
-      if (this.passwordNueva !== this.confirmarPassword) {
-        this.mensajeError = 'La nueva contraseña y la confirmación no coinciden.';
-        return;
-      }
-    }
-
-    // 3. Crear el objeto con los datos actualizados
-    const usuarioActualizado: Usuario = {
-      ...this.usuarioActual,
-      correo: this.emailEdit,
+    // Construimos el payload adaptado a lo que espera NestJS
+    const payloadBackend: any = {
+      email: this.emailEdit,
+      //suscritoNoticias: this.suscritoNoticiasEdit,
       direccionFacturacion: this.direccionEdit,
-      suscritoNoticias: this.suscritoNoticiasEdit,
       imagenUrl: this.imagenPreview || undefined
     };
 
     if (this.passwordNueva.trim() !== '') {
-      usuarioActualizado.password = this.passwordNueva;
+      if (this.passwordNueva === this.usuarioActual.password) {
+        this.mensajeError = 'La nueva contraseña no puede ser igual a la anterior.';
+        return;
+      }
+      if (this.passwordNueva !== this.confirmarPassword) {
+        this.mensajeError = 'Las contraseñas no coinciden.';
+        return;
+      }
+      payloadBackend.password = this.passwordNueva;
     }
 
-    // 4. Petición HTTP al Backend
-    this.authService.actualizarPerfil(usuarioActualizado).subscribe({
+    this.authService.actualizarPerfil(payloadBackend).subscribe({
       next: (usuarioResp) => {
-        // El servidor respondió con éxito y nos devolvió los datos actualizados
-        this.usuarioActual = usuarioResp; 
         this.passwordNueva = '';
         this.confirmarPassword = '';
         this.mensajeExito = '¡Perfil actualizado exitosamente!';
+        this.cargarDatosUsuario(); // Recargamos datos actualizados
       },
       error: (err) => {
         console.error('Error al actualizar perfil:', err);

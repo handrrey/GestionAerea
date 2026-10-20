@@ -57,6 +57,8 @@ export class AutenticacionService {
   // Obtiene el usuario que inició sesión con validación de seguridad
   obtenerUsuarioActual(): Usuario | null {
     const usuarioData = localStorage.getItem(this.LLAVE_USUARIO_ACTUAL);
+
+    console.log("Datos del usuario actual obtenidos de localStorage:", usuarioData);
     
     if (!usuarioData || usuarioData === 'undefined' || usuarioData === 'null') {
       return null;
@@ -72,6 +74,16 @@ export class AutenticacionService {
       localStorage.removeItem(this.LLAVE_USUARIO_ACTUAL);
       return null;
     }
+  }
+
+  // obtener todos los datos del usuario para su pefil
+  obtenerPerfilUsuario(id: number): Observable<Usuario>{
+    const token = this.obtenerToken();
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.get<Usuario>(`${this.API_URL}/usuario/${id}`, { headers });
   }
 
   // Historia 1: Iniciar sesión con JWT (listo)
@@ -123,7 +135,7 @@ recuperarClave(email: string): Observable<any> {
   return this.http.post(`${this.API_URL}/autenticacion/recuperar-clave`, { email });
 }
 
-  // Historia 7: Crear un Administrador (Solo ROOT)
+  // Historia 7: Crear un Administrador (Solo ROOT) (listo sin validacion de solo root)
   crearAdministrador(nuevoAdmin: Usuario): Observable<Usuario> {
     return this.http.post<Usuario>(`${this.API_URL}/usuario`, nuevoAdmin);
   }
@@ -133,7 +145,7 @@ recuperarClave(email: string): Observable<any> {
     return this.http.delete<void>(`${this.API_URL}/administracion/eliminar-admin/${id}`);
   }
 
-// Historia 9: Ver lista de administradores
+// Historia 9: Ver lista de administradores (listo)
 obtenerAdministradores(): Observable<Usuario[]> {
   const token = this.obtenerToken();
   const headers = new HttpHeaders({
@@ -145,7 +157,7 @@ obtenerAdministradores(): Observable<Usuario[]> {
 
   // Historias 5 y 6: Editar perfil
   actualizarPerfil(usuarioActualizado: Usuario): Observable<Usuario> {
-    return this.http.put<Usuario>(`${this.API_URL}/usuario/perfil`, usuarioActualizado).pipe(
+    return this.http.patch<Usuario>(`${this.API_URL}/usuario`, usuarioActualizado).pipe(
       tap(usuarioResp => {
         localStorage.setItem(this.LLAVE_USUARIO_ACTUAL, JSON.stringify(usuarioResp));
         this.usuarioCambioSubject.next(usuarioResp);
@@ -153,7 +165,7 @@ obtenerAdministradores(): Observable<Usuario[]> {
     );
   }
 
-  // Historia 3: Cerrar sesión
+  // Historia 3: Cerrar sesión (listo)
   cerrarSesion(): void {
     localStorage.removeItem(this.LLAVE_TOKEN);
     localStorage.removeItem(this.LLAVE_USUARIO_ACTUAL);
