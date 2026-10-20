@@ -21,8 +21,8 @@ export class RegistroComponent {
     lugarNacimiento: '',
     direccionFacturacion: '',
     genero: '',
-    email: '',
-    username: '',
+    correo: '',
+    usuario: '',
     password: '',
     imagenUrl: '',
     rol: 'CLIENTE',
@@ -57,8 +57,8 @@ export class RegistroComponent {
       !this.nuevoUsuario.cc ||
       !this.nuevoUsuario.nombres ||
       !this.nuevoUsuario.apellidos ||
-      !this.nuevoUsuario.email ||
-      !this.nuevoUsuario.username ||
+      !this.nuevoUsuario.correo ||
+      !this.nuevoUsuario.usuario ||
       !this.nuevoUsuario.password
     ) {
       this.mensajeError = 'Por favor completa todos los campos obligatorios.';

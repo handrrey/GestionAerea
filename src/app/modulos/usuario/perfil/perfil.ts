@@ -47,7 +47,7 @@ export class PerfilComponent implements OnInit {
     }
 
     // Inicializar campos con datos actuales del usuario
-    this.emailEdit = this.usuarioActual.email || '';
+    this.emailEdit = this.usuarioActual.correo || '';
     this.direccionEdit = this.usuarioActual.direccionFacturacion || '';
     this.suscritoNoticiasEdit = !!this.usuarioActual.suscritoNoticias;
     this.imagenPreview = this.usuarioActual.imagenUrl || null;
@@ -107,7 +107,7 @@ export class PerfilComponent implements OnInit {
     // 3. Crear el objeto con los datos actualizados
     const usuarioActualizado: Usuario = {
       ...this.usuarioActual,
-      email: this.emailEdit,
+      correo: this.emailEdit,
       direccionFacturacion: this.direccionEdit,
       suscritoNoticias: this.suscritoNoticiasEdit,
       imagenUrl: this.imagenPreview || undefined

@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AutenticacionService } from '../../../nucleo/servicios/autenticacion';
 import { Usuario } from '../../../nucleo/modelos/usuario.model';
+
 
 @Component({
   selector: 'app-gestion-administradores',
@@ -21,15 +22,16 @@ export class GestionAdministradoresComponent implements OnInit {
     cc: 0,
     nombres: '',
     apellidos: '',
-    email: '',
-    username: '',
+    correo: '',
+    usuario: '',
     password: '',
     rol: 'ADMIN'
   };
 
   constructor(
     private autenticacionService: AutenticacionService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -48,7 +50,9 @@ export class GestionAdministradoresComponent implements OnInit {
   // Pide al servicio que traiga los usuarios desde el backend
   this.autenticacionService.obtenerAdministradores().subscribe({
     next: (listaAdmins) => {
+      console.log('Datos reales del backend:', listaAdmins); // Prueba para ver listaAdmins
       this.administradores = listaAdmins;
+      this.cdr.detectChanges();
     },
     error: (err) => {
       console.error('Error al cargar administradores:', err);
@@ -66,8 +70,8 @@ export class GestionAdministradoresComponent implements OnInit {
     !this.nuevoAdmin.cc ||
     !this.nuevoAdmin.nombres ||
     !this.nuevoAdmin.apellidos ||
-    !this.nuevoAdmin.email ||
-    !this.nuevoAdmin.username ||
+    !this.nuevoAdmin.correo ||
+    !this.nuevoAdmin.usuario ||
     !this.nuevoAdmin.password
   ) {
     alert('Por favor completa todos los campos del nuevo administrador.');
@@ -84,8 +88,8 @@ export class GestionAdministradoresComponent implements OnInit {
         cc: 0, 
         nombres: '', 
         apellidos: '', 
-        email: '', 
-        username: '', 
+        correo: '', 
+        usuario: '', 
         password: '', 
         rol: 'ADMIN' 
       };

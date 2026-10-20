@@ -34,8 +34,8 @@ export class AutenticacionService {
           cc: 0,
           nombres: 'Usuario',
           apellidos: 'Root Sistema',
-          email: 'root@aerolinea.com',
-          username: 'root',
+          correo: 'root@aerolinea.com',
+          usuario: 'root',
           password: '123',
           rol: 'ROOT'
         }
@@ -94,9 +94,9 @@ export class AutenticacionService {
   registrarCliente(nuevoUsuario: Usuario): Observable<Usuario> {
 
     const payloadBackend = {
-      username: nuevoUsuario.username,
+      usuario: nuevoUsuario.usuario,
       password: nuevoUsuario.password,
-      email: nuevoUsuario.email,
+      correo: nuevoUsuario.correo,
       rol: nuevoUsuario.rol,
       
       // Convertimos explícitamente el string de la cédula a un número entero
