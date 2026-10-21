@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Usuario } from '../modelos/usuario.model';
+import { Usuario, UsuarioCreadoResponse } from '../modelos/usuario.model';
 import { Subject, Observable, tap } from 'rxjs';
 
 export interface LoginResponse {
@@ -34,7 +34,7 @@ export class AutenticacionService {
           cc: 0,
           nombres: 'Usuario',
           apellidos: 'Root Sistema',
-          correo: 'root@aerolinea.com',
+          email: 'root@aerolinea.com',
           usuario: 'root',
           password: '123',
           rol: 'ROOT'
@@ -88,7 +88,7 @@ export class AutenticacionService {
 
   // Historia 1: Iniciar sesión con JWT (listo)
   iniciarSesion(usuarioOCorreo: string, clave: string): Observable<LoginResponse> {
-    const body = { correo: usuarioOCorreo, contrasena: clave };
+    const body = { email: usuarioOCorreo, contrasena: clave };
 
     return this.http.post<any>(`${this.API_URL}/login`, body).pipe(
       tap(respuesta => {
@@ -103,11 +103,11 @@ export class AutenticacionService {
   }
 
   // Historia 2: Registrar un cliente (listo)
-  registrarCliente(nuevoUsuario: Usuario): Observable<Usuario> {
+  registrarCliente(nuevoUsuario: Usuario): Observable<UsuarioCreadoResponse> {
     const payloadBackend = {
       usuario: nuevoUsuario.usuario,
       password: nuevoUsuario.password,
-      correo: nuevoUsuario.correo,
+      email: nuevoUsuario.email,
       rol: nuevoUsuario.rol,
       
       // Convertimos explícitamente el string de la cédula a un número entero
@@ -126,7 +126,7 @@ export class AutenticacionService {
 
 
 
-    return this.http.post<Usuario>(`${this.API_URL}/usuario`, payloadBackend);
+    return this.http.post<UsuarioCreadoResponse>(`${this.API_URL}/usuario`, payloadBackend);
   }
 
 // Historia 4: Recuperar contraseña
@@ -135,8 +135,8 @@ export class AutenticacionService {
   }
 
   // Historia 7: Crear un Administrador (Solo ROOT) (listo sin validacion de solo root)
-  crearAdministrador(nuevoAdmin: Usuario): Observable<Usuario> {
-    return this.http.post<Usuario>(`${this.API_URL}/usuario`, nuevoAdmin);
+  crearAdministrador(nuevoAdmin: Usuario): Observable<UsuarioCreadoResponse> {
+    return this.http.post<UsuarioCreadoResponse>(`${this.API_URL}/usuario`, nuevoAdmin);
   }
 
   // Historia 8: Eliminar Administrador (Solo ROOT)
@@ -155,7 +155,7 @@ export class AutenticacionService {
   }
 
   // Historias 5 y 6: Editar perfil (listo)
-  actualizarPerfil(usuarioActualizado: Usuario): Observable<Usuario> {
+  actualizarPerfil(usuarioActualizado: Partial<Usuario>): Observable<Usuario> {
     return this.http.patch<Usuario>(`${this.API_URL}/usuario`, usuarioActualizado).pipe(
       tap(usuarioResp => {
         localStorage.setItem(this.LLAVE_USUARIO_ACTUAL, JSON.stringify(usuarioResp));

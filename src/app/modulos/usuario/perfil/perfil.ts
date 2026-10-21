@@ -16,7 +16,7 @@ export class PerfilComponent implements OnInit {
   usuarioActual: Usuario | null = null;
 
   // Campos Editables
-  correoEdit: string = '';
+  emailEdit: string = '';
   direccionEdit: string = '';
   suscritoNoticiasEdit: boolean = false;
   imagenPreview: string | null = null;
@@ -48,28 +48,12 @@ export class PerfilComponent implements OnInit {
 
     // Petición HTTP al backend
     this.authService.obtenerPerfilUsuario(this.usuarioActual.id_usuario).subscribe({
-      next: (resBackend: any) => {
-        const perfil = resBackend.informacionPerfil;
-
-        // 1. Mapeamos los datos del backend a la estructura plana de usuario.model.ts
-        const usuarioMapeado: Usuario = {
-          ...resBackend,
-          cc: perfil?.dni,
-          nombres: perfil?.nombres,
-          apellidos: perfil?.apellidos,
-          fechaNacimiento: perfil?.fecha_nacimiento,
-          lugarNacimiento: perfil?.lugar_nacimiento,
-          direccionFacturacion: perfil?.direccion_facturacion,
-          genero: perfil?.genero,
-          imagenUrl: perfil?.foto_url
-        };
-
+      next: (usuarioMapeado) => {
         this.usuarioActual = usuarioMapeado;
 
         // 2. Asignamos los campos editables usando el objeto recién mapeado
-        this.correoEdit = usuarioMapeado.correo || '';
+        this.emailEdit = usuarioMapeado.email || '';
         this.direccionEdit = usuarioMapeado.direccionFacturacion || '';
-        this.suscritoNoticiasEdit = !!usuarioMapeado.suscritoNoticias;
         this.imagenPreview = usuarioMapeado.imagenUrl || null;
       },
       error: (err) => {
@@ -104,7 +88,7 @@ export class PerfilComponent implements OnInit {
 
     if (!this.usuarioActual) return;
 
-    if (!this.correoEdit.trim()) {
+    if (!this.emailEdit.trim()) {
       this.mensajeError = 'El correo electrónico no puede estar vacío.';
       return;
     }
@@ -115,8 +99,8 @@ export class PerfilComponent implements OnInit {
     }
 
     // Construimos el payload adaptado a lo que espera NestJS
-    const payloadBackend: any = {
-      correo: this.correoEdit,
+    const payloadBackend: Partial<Usuario> = {
+      email: this.emailEdit,
       //suscritoNoticias: this.suscritoNoticiasEdit,
       direccionFacturacion: this.direccionEdit,
       imagenUrl: this.imagenPreview || undefined

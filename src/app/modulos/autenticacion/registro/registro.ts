@@ -21,7 +21,7 @@ export class RegistroComponent {
     lugarNacimiento: '',
     direccionFacturacion: '',
     genero: '',
-    correo: '',
+    email: '',
     usuario: '',
     password: '',
     imagenUrl: '',
@@ -57,7 +57,7 @@ export class RegistroComponent {
       !this.nuevoUsuario.cc ||
       !this.nuevoUsuario.nombres ||
       !this.nuevoUsuario.apellidos ||
-      !this.nuevoUsuario.correo ||
+      !this.nuevoUsuario.email ||
       !this.nuevoUsuario.usuario ||
       !this.nuevoUsuario.password
     ) {

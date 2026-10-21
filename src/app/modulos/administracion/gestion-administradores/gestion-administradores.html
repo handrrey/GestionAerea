@@ -59,7 +59,7 @@
           </div>
 
           <input type="text" [(ngModel)]="nuevoAdmin.direccionFacturacion" name="direccionFacturacion" placeholder="Dirección" required />
-          <input type="email" [(ngModel)]="nuevoAdmin.correo" name="correo" placeholder="Correo Electrónico" required />
+          <input type="email" [(ngModel)]="nuevoAdmin.email" name="email" placeholder="Correo Electrónico" required />
           <input type="text" [(ngModel)]="nuevoAdmin.usuario" name="usuario" placeholder="Usuario" required />
           <input type="password" [(ngModel)]="nuevoAdmin.password" name="password" placeholder="Contraseña" required />
           <button type="submit" class="btn-save-modal">Guardar Administrador</button>
@@ -93,10 +93,10 @@
           </thead>
           <tbody>
             <tr *ngFor="let admin of administradores">
-              <td><strong>{{ admin.informacionPerfil?.dni || 'Sin datos' }}</strong></td>
-              <td>{{ admin.informacionPerfil?.nombres || 'Perfil incompleto' }} {{ admin.informacionPerfil?.apellidos || 'Perfil incompleto' }}</td>
+              <td><strong>{{ admin.cc || 'Sin datos' }}</strong></td>
+              <td>{{ admin.nombres || 'Perfil incompleto' }} {{ admin.apellidos || 'Perfil incompleto' }}</td>
               <td>{{ admin.usuario }}</td>
-              <td>{{ admin.correo }}</td>
+              <td>{{ admin.email }}</td>
               <td>
                 <button class="btn-action-delete" (click)="eliminarAdmin(admin.id_usuario)">Eliminar Account</button>
               </td>

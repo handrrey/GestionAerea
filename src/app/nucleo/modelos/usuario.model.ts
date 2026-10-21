@@ -9,15 +9,14 @@ export interface Usuario {
   lugarNacimiento?: string;
   direccionFacturacion?: string;
   genero?: string;
-  correo?: string;
+  email?: string;
   usuario?: string;
   password?: string;
   imagenUrl?: string;
-  suscritoNoticias?: boolean;
   rol: RolUsuario;
-  informacionPerfil?: {
-    dni?: number;
-    nombres: string;
-    apellidos: string;
-  };
+}
+
+export interface UsuarioCreadoResponse {
+  message: string;
+  usuario: Usuario;
 }

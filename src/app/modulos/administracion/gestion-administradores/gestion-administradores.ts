@@ -22,7 +22,7 @@ export class GestionAdministradoresComponent implements OnInit {
     cc: 0,
     nombres: '',
     apellidos: '',
-    correo: '',
+    email: '',
     usuario: '',
     password: '',
     rol: 'ADMIN'
@@ -70,7 +70,7 @@ export class GestionAdministradoresComponent implements OnInit {
     !this.nuevoAdmin.cc ||
     !this.nuevoAdmin.nombres ||
     !this.nuevoAdmin.apellidos ||
-    !this.nuevoAdmin.correo ||
+    !this.nuevoAdmin.email ||
     !this.nuevoAdmin.usuario ||
     !this.nuevoAdmin.password
   ) {
@@ -84,14 +84,14 @@ export class GestionAdministradoresComponent implements OnInit {
       alert('Administrador creado exitosamente.');
       
       // Limpiamos el formulario
-      this.nuevoAdmin = { 
-        cc: 0, 
-        nombres: '', 
-        apellidos: '', 
-        correo: '', 
-        usuario: '', 
-        password: '', 
-        rol: 'ADMIN' 
+      this.nuevoAdmin = {
+        cc: 0,
+        nombres: '',
+        apellidos: '',
+        email: '',
+        usuario: '',
+        password: '',
+        rol: 'ADMIN'
       };
       
       this.mostrarFormulario = false;
