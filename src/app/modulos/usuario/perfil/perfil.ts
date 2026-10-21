@@ -83,7 +83,7 @@ export class PerfilComponent implements OnInit {
   }
 
   guardarCambios(): void {
-    this.mensajeExito = '';
+    this.mensajeExito = '¡Perfil actualizado con éxito!';
     this.mensajeError = '';
 
     if (!this.usuarioActual) return;
