@@ -16,7 +16,7 @@ export class PerfilComponent implements OnInit {
   usuarioActual: Usuario | null = null;
 
   // Campos Editables
-  emailEdit: string = '';
+  correoEdit: string = '';
   direccionEdit: string = '';
   suscritoNoticiasEdit: boolean = false;
   imagenPreview: string | null = null;
@@ -67,7 +67,7 @@ export class PerfilComponent implements OnInit {
         this.usuarioActual = usuarioMapeado;
 
         // 2. Asignamos los campos editables usando el objeto recién mapeado
-        this.emailEdit = usuarioMapeado.correo || '';
+        this.correoEdit = usuarioMapeado.correo || '';
         this.direccionEdit = usuarioMapeado.direccionFacturacion || '';
         this.suscritoNoticiasEdit = !!usuarioMapeado.suscritoNoticias;
         this.imagenPreview = usuarioMapeado.imagenUrl || null;
@@ -104,7 +104,7 @@ export class PerfilComponent implements OnInit {
 
     if (!this.usuarioActual) return;
 
-    if (!this.emailEdit.trim()) {
+    if (!this.correoEdit.trim()) {
       this.mensajeError = 'El correo electrónico no puede estar vacío.';
       return;
     }
@@ -116,7 +116,7 @@ export class PerfilComponent implements OnInit {
 
     // Construimos el payload adaptado a lo que espera NestJS
     const payloadBackend: any = {
-      email: this.emailEdit,
+      correo: this.correoEdit,
       //suscritoNoticias: this.suscritoNoticiasEdit,
       direccionFacturacion: this.direccionEdit,
       imagenUrl: this.imagenPreview || undefined

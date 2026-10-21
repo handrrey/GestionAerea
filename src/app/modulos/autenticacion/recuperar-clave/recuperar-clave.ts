@@ -12,7 +12,7 @@ import { AutenticacionService } from '../../../nucleo/servicios/autenticacion';
   styleUrls: ['./recuperar-clave.css']
 })
 export class RecuperarClaveComponent {
-  email: string = '';
+  correo: string = '';
   mensajeExito: string = '';
   mensajeError: string = '';
 
@@ -26,13 +26,13 @@ export class RecuperarClaveComponent {
     this.mensajeError = '';
 
     // 1. Validación local del campo
-    if (!this.email) {
+    if (!this.correo) {
       this.mensajeError = 'Por favor ingresa tu correo electrónico.';
       return;
     }
 
     // 2. Petición asíncrona al Backend
-    this.autenticacionService.recuperarClave(this.email).subscribe({
+    this.autenticacionService.recuperarClave(this.correo).subscribe({
       next: (respuesta) => {
         // ÉXITO: El servidor procesó la solicitud
         this.mensajeExito = 'Te hemos enviado un enlace de recuperación a tu correo electrónico.';

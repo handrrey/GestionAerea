@@ -87,8 +87,8 @@ export class AutenticacionService {
   }
 
   // Historia 1: Iniciar sesión con JWT (listo)
-  iniciarSesion(usuarioOEmail: string, clave: string): Observable<LoginResponse> {
-    const body = { correo: usuarioOEmail, contrasena: clave };
+  iniciarSesion(usuarioOCorreo: string, clave: string): Observable<LoginResponse> {
+    const body = { correo: usuarioOCorreo, contrasena: clave };
 
     return this.http.post<any>(`${this.API_URL}/login`, body).pipe(
       tap(respuesta => {
@@ -105,9 +105,9 @@ export class AutenticacionService {
   // Historia 2: Registrar un cliente (listo)
   registrarCliente(nuevoUsuario: Usuario): Observable<Usuario> {
     const payloadBackend = {
-      username: nuevoUsuario.usuario,
+      usuario: nuevoUsuario.usuario,
       password: nuevoUsuario.password,
-      email: nuevoUsuario.correo,
+      correo: nuevoUsuario.correo,
       rol: nuevoUsuario.rol,
       
       // Convertimos explícitamente el string de la cédula a un número entero
@@ -130,8 +130,8 @@ export class AutenticacionService {
   }
 
 // Historia 4: Recuperar contraseña
-  recuperarClave(email: string): Observable<any> {
-    return this.http.post(`${this.API_URL}/autenticacion/recuperar-clave`, { email });
+  recuperarClave(correo: string): Observable<any> {
+    return this.http.post(`${this.API_URL}/autenticacion/recuperar-clave`, { correo });
   }
 
   // Historia 7: Crear un Administrador (Solo ROOT) (listo sin validacion de solo root)
