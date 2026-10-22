@@ -22,7 +22,7 @@
     </ng-container>
 
     <!-- Si el usuario es un cliente autenticado -->
-    <ng-container *ngIf="usuarioActual && usuarioActual.rol === 'CLIENTE'">
+    <ng-container *ngIf="usuarioActual && usuarioActual.rol?.toUpperCase() === 'CLIENTE'">
       <span class="user-greeting">Hola, <strong>{{ usuarioActual.nombres }}</strong></span>
       <button (click)="cerrarSesion()" class="btn-outline">Cerrar Sesión</button>
     </ng-container>
