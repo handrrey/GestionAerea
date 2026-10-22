@@ -69,11 +69,13 @@
           <label for="birthdate">Fecha de Nacimiento</label>
           <input 
             type="date" 
-            id="birthdate" 
             [(ngModel)]="nuevoUsuario.fechaNacimiento" 
             name="fechaNacimiento" 
-            required 
-          />
+            id="fechaNacimiento"
+            [min]="fechaMinima" 
+            [max]="fechaMaxima" 
+            required
+          >
         </div>
 
         <div class="form-group">
