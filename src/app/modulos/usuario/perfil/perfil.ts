@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -31,7 +31,8 @@ export class PerfilComponent implements OnInit {
 
   constructor(
     private authService: AutenticacionService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -83,7 +84,7 @@ export class PerfilComponent implements OnInit {
   }
 
   guardarCambios(): void {
-    this.mensajeExito = '¡Perfil actualizado con éxito!';
+    this.mensajeExito = '';
     this.mensajeError = '';
 
     if (!this.usuarioActual) return;
@@ -122,7 +123,10 @@ export class PerfilComponent implements OnInit {
       next: (usuarioResp) => {
         this.passwordNueva = '';
         this.confirmarPassword = '';
+
         this.mensajeExito = '¡Perfil actualizado exitosamente!';
+        this.cdr.detectChanges();
+        
         this.cargarDatosUsuario(); // Recargamos datos actualizados
       },
       error: (err) => {

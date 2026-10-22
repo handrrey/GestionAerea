@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -18,7 +18,8 @@ export class InicioSesionComponent {
 
   constructor(
     private autenticacionService: AutenticacionService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
 alIngresar(): void {
@@ -46,6 +47,7 @@ alIngresar(): void {
       error: (err) => {
         console.error('Error en autenticación:', err);
         this.mensajeError = 'Usuario o contraseña incorrectos.';
+        this.cdr.detectChanges();
       }
     });
   }
