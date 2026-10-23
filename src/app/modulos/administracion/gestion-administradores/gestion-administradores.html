@@ -47,8 +47,10 @@
           <input type="number" [(ngModel)]="nuevoAdmin.cc" name="cc" placeholder="CC / Documento" required />
           <input type="text" [(ngModel)]="nuevoAdmin.nombres" name="nombres" placeholder="Nombres" required />
           <input type="text" [(ngModel)]="nuevoAdmin.apellidos" name="apellidos" placeholder="Apellidos" required />
-          <input type="date" [(ngModel)]="nuevoAdmin.fechaNacimiento" name="fechaNacimiento" placeholder="Fecha de Nacimiento" required />
-          <input type="text" [(ngModel)]="nuevoAdmin.lugarNacimiento" name="lugarNacimiento" placeholder="Lugar de Nacimiento" required />
+          <input type="date" [(ngModel)]="nuevoAdmin.fechaNacimiento" name="fechaNacimiento" placeholder="Fecha de Nacimiento" [min]="fechaMinima" 
+            [max]="fechaMaxima"required />
+          <input type="text" [(ngModel)]="nuevoAdmin.lugarNacimiento" name="lugarNacimiento" placeholder="Lugar de Nacimiento" [min]="fechaMinima" 
+            [max]="fechaMaxima"required />
 
           <div class="form-group">
           <select [(ngModel)]="nuevoAdmin.genero" name="genero" placeholder="Género" required>

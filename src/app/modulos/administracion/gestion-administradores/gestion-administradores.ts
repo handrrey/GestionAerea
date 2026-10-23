@@ -25,8 +25,12 @@ export class GestionAdministradoresComponent implements OnInit {
     email: '',
     usuario: '',
     password: '',
-    rol: 'ADMIN'
+    rol: 'ADMIN',
+    fechaNacimiento: '',
   };
+
+  fechaMinima: string = '';
+  fechaMaxima: string = '';
 
   constructor(
     private autenticacionService: AutenticacionService,
@@ -44,6 +48,20 @@ export class GestionAdministradoresComponent implements OnInit {
     } else {
       this.cargarAdministradores();
     }
+
+    // Validación de fechas para el formulario de creación de administradores
+    const hoy = new Date();
+
+    // Límite máximo: Hace exactamente 18 años (para bloquear a los menores de edad)
+    const max = new Date(hoy.getFullYear() - 18, hoy.getMonth(), hoy.getDate());
+    
+    // Límite mínimo: Hace exactamente 100 años (para bloquear edades irreales)
+    const min = new Date(hoy.getFullYear() - 100, hoy.getMonth(), hoy.getDate());
+
+    // Convertimos las fechas al formato YYYY-MM-DD que requiere el input HTML
+    this.fechaMaxima = max.toISOString().split('T')[0];
+    this.fechaMinima = min.toISOString().split('T')[0];
+  
   }
 
   cargarAdministradores(): void {
@@ -72,9 +90,20 @@ export class GestionAdministradoresComponent implements OnInit {
     !this.nuevoAdmin.apellidos ||
     !this.nuevoAdmin.email ||
     !this.nuevoAdmin.usuario ||
-    !this.nuevoAdmin.password
+    !this.nuevoAdmin.password ||
+    !this.nuevoAdmin.fechaNacimiento
   ) {
     alert('Por favor completa todos los campos del nuevo administrador.');
+    return;
+  }
+
+  // Validación de mayoría de edad
+  if (!this.nuevoAdmin.fechaNacimiento) {
+    alert('Por favor ingresa la fecha de nacimiento.');
+    return;
+  }
+  if (!this.validarMayorDeEdad(this.nuevoAdmin.fechaNacimiento)) {
+    alert('El administrador debe ser mayor de 18 años.');
     return;
   }
 
@@ -95,6 +124,7 @@ export class GestionAdministradoresComponent implements OnInit {
       };
       
       this.mostrarFormulario = false;
+      
       
       // Volvemos a consultar la lista actualizada desde la BD del backend
       this.cargarAdministradores();
@@ -127,5 +157,19 @@ export class GestionAdministradoresComponent implements OnInit {
   cerrarSesion(): void {
     this.autenticacionService.cerrarSesion();
     this.router.navigate(['/inicio-sesion']);
+  }
+
+  validarMayorDeEdad(fechaNacimientoStr: string): boolean {
+    const fechaNacimiento = new Date(fechaNacimientoStr);
+    const hoy = new Date();
+  
+    let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
+    const mes = hoy.getMonth() - fechaNacimiento.getMonth();
+  
+    if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
+      edad--;
+    }
+  
+    return edad >= 18;
   }
 }
