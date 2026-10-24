@@ -23,52 +23,86 @@
     <!-- Formulario Grid -->
     <div class="form-grid">
       
-      <!-- Cédula (Bloqueado) -->
+      <!-- Cédula (BLOQUEADO) -->
       <div class="form-group full-width">
         <label for="cc">DNI / Cédula <span>🔒 (Dato Protegido)</span></label>
         <input type="text" id="cc" [value]="usuarioActual.cc" disabled>
       </div>
 
-      <!-- Nombre de Usuario (Bloqueado) -->
+      <!-- Nombre de Usuario (EDITABLE) -->
       <div class="form-group full-width">
-        <label for="usuario">Usuario <span>🔒 (Dato Protegido)</span></label>
-        <input type="text" id="usuario" [value]="usuarioActual.usuario" disabled>
+        <label for="usuario">Usuario </label>
+        <input type="text" id="usuario" name="usuario" [(ngModel)]="usuarioActual.usuario" placeholder="Escribe tu usuario" required>
       </div>
 
-      <!-- Nombres (Bloqueado) -->
+      <!-- Nombres (EDITABLE) -->
       <div class="form-group">
         <label for="names">Nombres</label>
-        <input type="text" id="names" [value]="usuarioActual.nombres" disabled>
+        <input type="text" id="names" name="nombres" [(ngModel)]="usuarioActual.nombres" placeholder="Nombres" required>
       </div>
 
-      <!-- Apellidos (Bloqueado) -->
+      <!-- Apellidos (EDITABLE) -->
       <div class="form-group">
         <label for="surnames">Apellidos</label>
-        <input type="text" id="surnames" [value]="usuarioActual.apellidos" disabled>
+        <input type="text" id="surnames" name="apellidos" [(ngModel)]="usuarioActual.apellidos" placeholder="Apellidos" required>
       </div>
 
-      <!-- Fecha de Nacimiento (Bloqueado) -->
-      <div class="form-group">
-        <label for="fechaNacimiento">Fecha de Nacimiento</label>
-        <input type="text" id="fechaNacimiento" [value]="usuarioActual.fechaNacimiento || 'No registrada'" disabled>
-      </div>
+      <!-- Fecha de Nacimiento (EDITABLE) -->
+        <div class="form-group">
+          <label for="birthdate">Fecha de Nacimiento</label>
+          <input 
+            type="date" 
+            [(ngModel)]="usuarioActual.fechaNacimiento" 
+            name="fechaNacimiento" 
+            id="fechaNacimiento"
+            [min]="fechaMinima" 
+            [max]="fechaMaxima" 
+            required
+          >
+        </div>
 
-      <!-- Lugar de Nacimiento (Bloqueado) -->
-      <div class="form-group">
-        <label for="birthplace">Lugar de Nacimiento</label>
-        <input type="text" id="birthplace" [value]="usuarioActual.lugarNacimiento || 'No registrado'" disabled>
-      </div>
+      <!-- Lugar de Nacimiento (EDITABLE) -->
+        <div class="form-group" style="position: relative;">
+          <label for="lugarNacimiento">Lugar de Nacimiento</label>
+          <input 
+            #cajaLugar
+            type="text" 
+            [(ngModel)]="usuarioActual.lugarNacimiento" 
+            (input)="alEscribirLugar(cajaLugar.value)"
+            name="lugarNacimiento" 
+            id="lugarNacimiento"
+            autocomplete="off"
+            placeholder="Escribe una ciudad..."
+            required
+          >
+          <!-- Menú desplegable dinámico -->
+          <ul class="lista-lugares" *ngIf="lugares.length > 0">
+            <li *ngFor="let lugar of lugares" (click)="seleccionarLugar(lugar)">
+              {{ lugar }}
+            </li>
+          </ul>
+        </div>
 
-      <!-- Género (Bloqueado) -->
+      <!-- Género (EDITABLE) -->
+        <div class="form-group">
+          <label for="gender">Género</label>
+          <select 
+            id="gender" 
+            [(ngModel)]="usuarioActual.genero" 
+            name="genero" 
+            required
+          >
+            <option value="" disabled selected>Selecciona una opción</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Femenino">Femenino</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+
+      <!-- Correo Electrónico (BLOQUEADO) -->
       <div class="form-group full-width">
-        <label for="genero">Género</label>
-        <input type="text" id="genero" [value]="usuarioActual.genero || 'No especificado'" disabled>
-      </div>
-
-      <!-- Correo Electrónico (EDITABLE) -->
-      <div class="form-group full-width">
-        <label for="email">Correo Electrónico *</label>
-        <input type="email" id="email" [(ngModel)]="emailEdit" name="email" required>
+        <label for="email">Correo Electrónico <span>🔒 (Dato Protegido)</span></label>
+        <input type="email" id="email" [(ngModel)]="emailEdit" name="email" disabled>
       </div>
 
       <!-- Dirección de Facturación (EDITABLE) -->
@@ -89,13 +123,13 @@
         <input type="password" id="confirm-password" [(ngModel)]="confirmarPassword" name="confirmPassword" placeholder="••••••••">
       </div>
 
-      <!-- Suscripción -->
+      <!-- Suscripción 
       <div class="form-group full-width">
         <div class="checkbox-group">
           <input type="checkbox" id="news" [(ngModel)]="suscritoNoticiasEdit" name="news" style="accent-color: var(--accent);">
           <label for="news" style="margin: 0; font-weight: 500;">Suscrito al sistema de noticias y promociones</label>
         </div>
-      </div>
+      </div>-->
 
       <!-- Botones -->
       <div class="form-group full-width">

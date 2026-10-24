@@ -126,6 +126,19 @@
   cursor: not-allowed;
 }
 
+.form-group input, .form-group select {
+  height: 44px; 
+  padding: 0 14px;
+  border: 1px solid #D3AFFB; 
+  border-radius: 10px;
+  background-color: var(--bg); 
+  color: var(--primary); 
+  font-size: 13px;
+  outline: none; 
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
 .form-group input:focus:not(:disabled) { 
   border-color: #AC6EEF; 
   box-shadow: 0 0 0 3px rgba(172, 110, 239, 0.2);
@@ -197,4 +210,67 @@
   background-color: #F8D7DA;
   color: #721C24;
   border: 1px solid #F5C6CB;
+}
+
+
+.contenedor-autocompletado {
+  position: relative;
+}
+
+.sugerencias-lista {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #FAFAFA;
+  border: 1px solid #D3AFFB;
+  border-radius: 8px;
+  list-style: none;
+  margin: 4px 0 0 0;
+  padding: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.sugerencias-lista li {
+  padding: 10px 15px;
+  cursor: pointer;
+  font-size: 14px;
+  border-bottom: 1px solid #E9ECEF;
+}
+
+.sugerencias-lista li:hover {
+  background-color: #D3AFFB;
+  color: #521E89;
+}
+
+.sugerencias-lista li:last-child {
+  border-bottom: none;
+}
+
+.lista-lugares {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: #FAFAFA;
+  border: 1px solid #D3AFFB;
+  border-radius: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.lista-lugares li {
+  padding: 10px;
+  cursor: pointer;
+  color: #521E89;
+  font-size: 14px;
+}
+.lista-lugares li:hover {
+  background-color: #D3AFFB;
 }
