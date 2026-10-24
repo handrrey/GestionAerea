@@ -141,10 +141,25 @@ export class RegistroComponent implements OnInit {
           textoError = mensajeBackend.toLowerCase();
         }
 
-        if (textoError.includes('email') || textoError.includes('correo')) {
+        if (err.status === 500 || textoError.includes('internal server error')) {
+          this.mensajeError = 'Error del servidor: Es probable que el nombre de usuario o correo ya estén en uso.';
+        }
+        else if (textoError.includes('email') || textoError.includes('correo')) {
           this.mensajeError = 'Correo electronico invalido.';
-        } else {
+        } 
+        else if (textoError.includes('letras') || textoError.includes('caracteres')) {
+          this.mensajeError = 'Contraseña invalida. Debe tener minimo 8 caracteres, 1 letra y 1 número.';
+        } 
+        else if (textoError.includes('duplicate') || textoError.includes('unique') || textoError.includes('duplicado')) {
           this.mensajeError = 'El nombre de usuario o correo ya se encuentra registrado.';
+        }
+        else if (textoError.includes('usuario') || textoError.includes('invalido')) {
+          this.mensajeError = 'Nombre de usuario invalido.';
+        }
+        else {
+          this.mensajeError = Array.isArray(mensajeBackend) 
+            ? mensajeBackend[0] 
+            : (mensajeBackend || 'Error inesperado al procesar el registro.');
         }
 
         this.cdr.detectChanges();
