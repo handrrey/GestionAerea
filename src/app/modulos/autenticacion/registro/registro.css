@@ -193,3 +193,29 @@
   font-size: 13px;
   text-align: center;
 }
+
+
+.lista-lugares {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: #FAFAFA;
+  border: 1px solid #D3AFFB;
+  border-radius: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.lista-lugares li {
+  padding: 10px;
+  cursor: pointer;
+  color: #521E89;
+  font-size: 14px;
+}
+.lista-lugares li:hover {
+  background-color: #D3AFFB;
+}

@@ -78,16 +78,25 @@
           >
         </div>
 
-        <div class="form-group">
-          <label for="birthplace">Lugar de Nacimiento</label>
+        <div class="form-group" style="position: relative;">
+          <label for="lugarNacimiento">Lugar de Nacimiento</label>
           <input 
+            #cajaLugar
             type="text" 
-            id="birthplace" 
             [(ngModel)]="nuevoUsuario.lugarNacimiento" 
+            (input)="alEscribirLugar(cajaLugar.value)"
             name="lugarNacimiento" 
-            placeholder="ej. Pereira" 
-            required 
-          />
+            id="lugarNacimiento"
+            autocomplete="off"
+            placeholder="Escribe una ciudad..."
+            required
+          >
+          <!-- Menú desplegable dinámico -->
+          <ul class="lista-lugares" *ngIf="lugares.length > 0">
+            <li *ngFor="let lugar of lugares" (click)="seleccionarLugar(lugar)">
+              {{ lugar }}
+            </li>
+          </ul>
         </div>
 
         <div class="form-group">
@@ -101,6 +110,7 @@
             <option value="" disabled selected>Selecciona una opción</option>
             <option value="Masculino">Masculino</option>
             <option value="Femenino">Femenino</option>
+            <option value="Otro">Otro</option>
           </select>
         </div>
 
