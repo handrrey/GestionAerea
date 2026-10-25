@@ -6,7 +6,7 @@ import { Vuelo } from '../modelos/vuelos.model';
 
 @Injectable({ providedIn: 'root' })
 export class VuelosService {
-  private API_URL = 'http://localhost:3000/api/vuelos'; // Ajusta de backend
+  private API_URL = 'http://localhost:3000/appV1/vuelos'; // Ajusta de backend
 
   constructor(private http: HttpClient) {}
 
