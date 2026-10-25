@@ -40,31 +40,51 @@
         </button>
       </div>
 
-      <!-- Formulario para Crear Administrador (Modal / Desplegable) -->
+      <!-- Formulario para Crear Administrador -->
       <div *ngIf="mostrarFormulario" class="modal-form-container">
         <h3>Registrar Nuevo Administrador</h3>
-        <form (ngSubmit)="crearAdmin()" class="form-grid-modal">
-          <input type="number" [(ngModel)]="nuevoAdmin.cc" name="cc" placeholder="CC / Documento" required />
-          <input type="text" [(ngModel)]="nuevoAdmin.nombres" name="nombres" placeholder="Nombres" required />
-          <input type="text" [(ngModel)]="nuevoAdmin.apellidos" name="apellidos" placeholder="Apellidos" required />
-          <input type="date" [(ngModel)]="nuevoAdmin.fechaNacimiento" name="fechaNacimiento" placeholder="Fecha de Nacimiento" [min]="fechaMinima" 
-            [max]="fechaMaxima"required />
-          <input type="text" [(ngModel)]="nuevoAdmin.lugarNacimiento" name="lugarNacimiento" placeholder="Lugar de Nacimiento" [min]="fechaMinima" 
-            [max]="fechaMaxima"required />
+        
+        <!-- Mensaje aclaratorio de contraseña provisional -->
+        <p style="font-size: 13px; color: #666; margin-bottom: 16px;">
+          ℹ️ La contraseña provisional de acceso inicial para el nuevo usuario será su <strong>Número de Documento (CC)</strong>.
+        </p>
 
+        <form (ngSubmit)="crearAdmin()" class="form-grid-modal">
+          
           <div class="form-group">
-          <select [(ngModel)]="nuevoAdmin.genero" name="genero" placeholder="Género" required>
-            <option value="" disabled selected>Seleccionar Género</option>
-            <option value="Masculino">Masculino</option>
-            <option value="Femenino">Femenino</option>
-          </select>
+            <label>Número de Documento (CC)</label>
+            <input 
+              type="number" 
+              [(ngModel)]="nuevoAdmin.cc" 
+              name="cc" 
+              placeholder="Ej. 1088123456" 
+              required />
           </div>
 
-          <input type="text" [(ngModel)]="nuevoAdmin.direccionFacturacion" name="direccionFacturacion" placeholder="Dirección" required />
-          <input type="email" [(ngModel)]="nuevoAdmin.email" name="email" placeholder="Correo Electrónico" required />
-          <input type="text" [(ngModel)]="nuevoAdmin.usuario" name="usuario" placeholder="Usuario" required />
-          <input type="password" [(ngModel)]="nuevoAdmin.password" name="password" placeholder="Contraseña" required />
-          <button type="submit" class="btn-save-modal">Guardar Administrador</button>
+          <div class="form-group">
+            <label>Nombre de Usuario</label>
+            <input 
+              type="text" 
+              [(ngModel)]="nuevoAdmin.usuario" 
+              name="usuario" 
+              placeholder="Ej. admin_juan" 
+              required />
+          </div>
+
+          <div class="form-group">
+            <label>Correo Electrónico</label>
+            <input 
+              type="email" 
+              [(ngModel)]="nuevoAdmin.email" 
+              name="email" 
+              placeholder="Ej. admin@gestionaerea.com" 
+              required />
+          </div>
+
+          <div class="form-group full-width" style="grid-column: 1 / -1; margin-top: 8px;">
+            <button type="submit" class="btn-save-modal">Guardar Administrador</button>
+          </div>
+
         </form>
       </div>
 
@@ -87,7 +107,6 @@
           <thead>
             <tr>
               <th>CC / ID</th>
-              <th>Nombre Completo</th>
               <th>Usuario</th>
               <th>Correo Electrónico</th>
               <th>Acciones</th>
@@ -96,15 +115,14 @@
           <tbody>
             <tr *ngFor="let admin of administradores">
               <td><strong>{{ admin.cc || 'Sin datos' }}</strong></td>
-              <td>{{ admin.nombres || 'Perfil incompleto' }} {{ admin.apellidos || 'Perfil incompleto' }}</td>
               <td>{{ admin.usuario }}</td>
               <td>{{ admin.email }}</td>
               <td>
-                <button class="btn-action-delete" (click)="eliminarAdmin(admin.id_usuario)">Eliminar Account</button>
+                <button class="btn-action-delete" (click)="eliminarAdmin(admin.id_usuario)">Eliminar Cuenta</button>
               </td>
             </tr>
             <tr *ngIf="administradores.length === 0">
-              <td colspan="5" style="text-align: center; color: #888;">No hay administradores registrados aún.</td>
+              <td colspan="4" style="text-align: center; color: #888;">No hay administradores registrados aún.</td>
             </tr>
           </tbody>
         </table>
