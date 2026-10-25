@@ -19,17 +19,38 @@ export class GestionVuelosComponent implements OnInit {
   usuarioActual: Usuario | null = null;
   vuelos: Vuelo[] = [];
   
-  // Orígenes restringidos únicamente a estas 5 ciudades
   ciudadesOrigen: string[] = [
     'Pereira (PEI)', 'Bogotá (BOG)', 'Medellín (MDE)', 'Cali (CLO)', 'Cartagena (CTG)'
   ];
 
-  // Destinos completos disponibles
   ciudadesDestino: string[] = [
     'Pereira (PEI)', 'Bogotá (BOG)', 'Medellín (MDE)', 'Cartagena (CTG)',
     'Cali (CLO)', 'Miami (MIA)', 'Madrid (MAD)', 'Londres (LON)',
     'Nueva York (NYC)', 'Buenos Aires (BUE)'
   ];
+
+  // 🟢 Tabla de duraciones estimadas estándar (en minutos) entre ciudades
+  private duracionesMinutos: { [clave: string]: number } = {
+    // Desde Pereira
+    'PEI-BOG': 55,  'PEI-MDE': 45,  'PEI-CLO': 45,  'PEI-CTG': 80,
+    'PEI-MIA': 230, 'PEI-MAD': 600, 'PEI-LON': 630, 'PEI-NYC': 340, 'PEI-BUE': 380,
+
+    // Desde Bogotá
+    'BOG-MDE': 60,  'BOG-CLO': 60,  'BOG-CTG': 85,  'BOG-PEI': 55,
+    'BOG-MIA': 220, 'BOG-MAD': 580, 'BOG-LON': 615, 'BOG-NYC': 330, 'BOG-BUE': 375,
+
+    // Desde Medellín
+    'MDE-CLO': 60,  'MDE-CTG': 75,  'MDE-BOG': 60,  'MDE-PEI': 45,
+    'MDE-MIA': 225, 'MDE-MAD': 590, 'MDE-LON': 625, 'MDE-NYC': 335, 'MDE-BUE': 385,
+
+    // Desde Cali
+    'CLO-CTG': 100, 'CLO-BOG': 60,  'CLO-MDE': 60,  'CLO-PEI': 45,
+    'CLO-MIA': 235, 'CLO-MAD': 600, 'CLO-LON': 635, 'CLO-NYC': 345, 'CLO-BUE': 370,
+
+    // Desde Cartagena
+    'CTG-BOG': 85,  'CTG-MDE': 75,  'CTG-CLO': 100, 'CTG-PEI': 80,
+    'CTG-MIA': 170, 'CTG-MAD': 570, 'CTG-LON': 600, 'CTG-NYC': 290, 'CTG-BUE': 430
+  };
 
   mostrarModal: boolean = false;
   editando: boolean = false;
@@ -70,7 +91,7 @@ export class GestionVuelosComponent implements OnInit {
       destino: '', 
       fecha: new Date(), 
       horaVuelo: '', 
-      horaLlegada: '', 
+      duracionVuelo: '', 
       precioEconomico: 0, 
       precioPrimera: 0, 
       estado: 'Programado', 
@@ -78,7 +99,6 @@ export class GestionVuelosComponent implements OnInit {
     };
   }
 
-  // cualquiera menos el seleccionado como origen
   get destinosDisponibles(): string[] {
     if (!this.vueloForm.origen) return this.ciudadesDestino;
     return this.ciudadesDestino.filter(c => c !== this.vueloForm.origen);
@@ -88,6 +108,36 @@ export class GestionVuelosComponent implements OnInit {
     if (this.vueloForm.destino === this.vueloForm.origen) {
       this.vueloForm.destino = '';
     }
+    this.actualizarDuracionAutomatica();
+  }
+
+  onDestinoChange(): void {
+    this.actualizarDuracionAutomatica();
+  }
+
+  // 🟢 Método para extraer el código IATA e instanciar la duración automática
+  private actualizarDuracionAutomatica(): void {
+    if (!this.vueloForm.origen || !this.vueloForm.destino) {
+      return;
+    }
+
+    const iataOrigen = this.extraerIata(this.vueloForm.origen);
+    const iataDestino = this.extraerIata(this.vueloForm.destino);
+    const claveRuta = `${iataOrigen}-${iataDestino}`;
+
+    const minutos = this.duracionesMinutos[claveRuta] || 60; // 60 min por defecto
+    const horasCalculadas = Math.floor(minutos / 60);
+    const minsCalculados = minutos % 60;
+
+    const hh = String(horasCalculadas).padStart(2, '0');
+    const mm = String(minsCalculados).padStart(2, '0');
+
+    this.vueloForm.duracionVuelo = `${hh}:${mm}`;
+  }
+
+  private extraerIata(ciudadStr: string): string {
+    const match = ciudadStr.match(/\(([A-Z]{3})\)/);
+    return match ? match[1] : '';
   }
 
   get esOrigenDestinoDeshabilitado(): boolean {
@@ -100,11 +150,11 @@ export class GestionVuelosComponent implements OnInit {
   }
 
   get vuelosProgramadosCount(): number {
-    return this.vuelos.filter(v => v.estado === 'Programado').length;
+    return this.vuelos.filter(v => (v.estado || (v as any).estado_vuelo) === 'Programado').length;
   }
 
   get vuelosRealizadosCount(): number {
-    return this.vuelos.filter(v => v.estado === 'Realizado').length;
+    return this.vuelos.filter(v => (v.estado || (v as any).estado_vuelo) === 'Realizado').length;
   }
 
   abrirModalNuevo(): void {
@@ -114,7 +164,7 @@ export class GestionVuelosComponent implements OnInit {
   }
 
   abrirModalEditar(vuelo: Vuelo): void {
-    if (vuelo.estado === 'Realizado') return;
+    if ((vuelo.estado || (vuelo as any).estado_vuelo) === 'Realizado') return;
     this.editando = true;
     this.vueloForm = { ...vuelo };
     this.mostrarModal = true;
@@ -143,11 +193,11 @@ export class GestionVuelosComponent implements OnInit {
       !this.vueloForm.destino || 
       !this.vueloForm.fecha || 
       !this.vueloForm.horaVuelo || 
-      !this.vueloForm.horaLlegada || 
+      !this.vueloForm.duracionVuelo || 
       this.vueloForm.precioEconomico <= 0 || 
       this.vueloForm.precioPrimera <= 0
     ) {
-      alert('Por favor completa todos los campos correctamente, incluyendo ambos precios.');
+      alert('Por favor completa todos los campos correctamente.');
       return;
     }
 
@@ -180,12 +230,17 @@ export class GestionVuelosComponent implements OnInit {
         error: () => alert('Error al editar el vuelo en el servidor.')
       });
     } else {
-      this.vuelosService.crearVuelo(this.vueloForm).subscribe({
+      const { id, ...payloadNuevoVuelo } = this.vueloForm;
+
+      this.vuelosService.crearVuelo(payloadNuevoVuelo as Vuelo).subscribe({
         next: () => {
           this.cargarVuelos();
           this.cerrarModal();
         },
-        error: () => alert('Error al crear el vuelo en el servidor.')
+        error: (err) => {
+          console.error('Error al crear vuelo:', err);
+          alert('Error al crear el vuelo en el servidor.');
+        }
       });
     }
   }
@@ -207,11 +262,19 @@ export class GestionVuelosComponent implements OnInit {
   }
 
   formatearFecha(fecha: Date | string): string {
-    if (!fecha) return '';
+    if (!fecha) return '-';
     const date = new Date(fecha);
+    if (isNaN(date.getTime())) return '-';
     const dia = String(date.getDate()).padStart(2, '0');
     const mes = String(date.getMonth() + 1).padStart(2, '0');
     const anio = date.getFullYear();
     return `${dia}/${mes}/${anio}`;
+  }
+
+  obtenerPropiedad(obj: any, camelKey: string, snakeKey: string): any {
+    if (!obj) return null;
+    return obj[camelKey] !== undefined && obj[camelKey] !== null 
+      ? obj[camelKey] 
+      : obj[snakeKey];
   }
 }

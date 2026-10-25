@@ -5,7 +5,7 @@ export interface Vuelo {
   destino: string;
   fecha: Date;
   horaVuelo: string;
-  horaLlegada: string;
+  duracionVuelo: string;
   precioEconomico: number;
   precioPrimera: number;
   estado: 'Programado' | 'Realizado' | 'Cancelado';
