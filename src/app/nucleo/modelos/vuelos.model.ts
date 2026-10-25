@@ -10,4 +10,5 @@ export interface Vuelo {
   precioPrimera: number;
   estado: 'Programado' | 'Realizado' | 'Cancelado';
   reservasCount?: number; 
+  idAdmin?: number;
 }
