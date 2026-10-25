@@ -3,8 +3,11 @@ export interface Vuelo {
   codigo: string;
   origen: string;
   destino: string;
-  fechaHora: string;
-  precio: number;
-  estado: 'PROGRAMADO' | 'REALIZADO' | 'CANCELADO';
+  fecha: Date;
+  horaVuelo: string;
+  horaLlegada: string;
+  precioEconomico: number;
+  precioPrimera: number;
+  estado: 'Programado' | 'Realizado' | 'Cancelado';
   reservasCount?: number; 
 }

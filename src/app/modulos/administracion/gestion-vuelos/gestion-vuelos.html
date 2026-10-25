@@ -79,7 +79,7 @@
               <th>Código</th>
               <th>Origen - Destino</th>
               <th>Fecha y Hora</th>
-              <th>Precio Unitario</th>
+              <th>Precios (Econ. / 1ra)</th>
               <th>Reservas</th>
               <th>Estado</th>
               <th>Acciones</th>
@@ -89,8 +89,11 @@
             <tr *ngFor="let vuelo of vuelos">
               <td><strong>{{ vuelo.codigo }}</strong></td>
               <td>{{ vuelo.origen }} → {{ vuelo.destino }}</td>
-              <td>{{ formatearFechaHora(vuelo.fechaHora) }}</td>
-              <td>$ {{ vuelo.precio | number:'1.0-0' }} COP</td>
+              <td>{{ formatearFecha(vuelo.fecha) }} - {{ vuelo.horaVuelo }} → {{ vuelo.horaLlegada }}</td>
+              <td>
+                <div style="font-size: 13px;">Econ: $ {{ vuelo.precioEconomico | number:'1.0-0' }}</div>
+                <div style="font-size: 13px;">1ra: $ {{ vuelo.precioPrimera | number:'1.0-0' }}</div>
+              </td>
               <td>
                 <span class="badge-reservas" [class.has-reservas]="(vuelo.reservasCount ?? 0) > 0">
                   {{ vuelo.reservasCount ?? 0 }} reserva(s)
@@ -98,18 +101,18 @@
               </td>
               <td>
                 <span class="status-tag" [ngClass]="{
-                  'status-scheduled': vuelo.estado === 'PROGRAMADO',
-                  'status-completed': vuelo.estado === 'REALIZADO',
-                  'status-cancelled': vuelo.estado === 'CANCELADO'
+                  'status-scheduled': vuelo.estado === 'Programado',
+                  'status-completed': vuelo.estado === 'Realizado',
+                  'status-cancelled': vuelo.estado === 'Cancelado'
                 }">
-                  {{ vuelo.estado === 'PROGRAMADO' ? 'Programado' : (vuelo.estado === 'REALIZADO' ? 'Realizado' : 'Cancelado') }}
+                  {{ vuelo.estado }}
                 </span>
               </td>
               <td>
-                <button class="btn-action-edit" (click)="abrirModalEditar(vuelo)" [disabled]="vuelo.estado !== 'PROGRAMADO'" [style.opacity]="vuelo.estado !== 'PROGRAMADO' ? 0.5 : 1">
+                <button class="btn-action-edit" (click)="abrirModalEditar(vuelo)" [disabled]="vuelo.estado !== 'Programado'" [style.opacity]="vuelo.estado !== 'Programado' ? 0.5 : 1">
                   Editar
                 </button>
-                <button class="btn-action-cancel" (click)="cancelarVuelo(vuelo.id)" *ngIf="vuelo.estado === 'PROGRAMADO'">
+                <button class="btn-action-cancel" (click)="cancelarVuelo(vuelo.id)" *ngIf="vuelo.estado === 'Programado'">
                   Cancelar
                 </button>
               </td>
@@ -133,10 +136,10 @@
       <!-- Aviso de Restricción si está editando -->
       <div class="info-alert" *ngIf="editando">
         <span *ngIf="(vueloForm.reservasCount ?? 0) > 0">
-          ⚠️ <strong>Vuelo con reservas:</strong> Solo se permite modificar el <strong>Precio Unitario</strong>.
+          ⚠️ <strong>Vuelo con reservas:</strong> Solo se permite modificar los <strong>Precios</strong>.
         </span>
         <span *ngIf="(vueloForm.reservasCount ?? 0) === 0">
-          ℹ️ <strong>Vuelo sin reservas:</strong> Solo se permite modificar <strong>Fecha, Hora y Precio Unitario</strong>.
+          ℹ️ <strong>Vuelo sin reservas:</strong> Se permite modificar <strong>Fecha, Hora y Precios</strong>.
         </span>
       </div>
 
@@ -145,13 +148,13 @@
         <input type="text" [(ngModel)]="vueloForm.codigo" [disabled]="editando" placeholder="Ej. AV-103">
       </div>
 
-      <!-- Desplegables Origen y Destino -->
+      <!-- Desplegables Origen (restringido a 5 ciudades) y Destino -->
       <div class="form-row">
         <div class="form-group">
           <label>Origen</label>
           <select [(ngModel)]="vueloForm.origen" (change)="onOrigenChange()" [disabled]="esOrigenDestinoDeshabilitado">
             <option value="" disabled selected>Selecciona origen</option>
-            <option *ngFor="let ciudad of ciudades" [value]="ciudad">{{ ciudad }}</option>
+            <option *ngFor="let ciudad of ciudadesOrigen" [value]="ciudad">{{ ciudad }}</option>
           </select>
         </div>
 
@@ -164,22 +167,45 @@
         </div>
       </div>
 
-      <!-- Fecha, Hora y Precio -->
+      <!-- Fecha y Hora Separadas -->
       <div class="form-row">
         <div class="form-group">
-          <label>Fecha y Hora</label>
+          <label>Fecha del Vuelo</label>
           <input 
-            type="datetime-local" 
-            [(ngModel)]="vueloForm.fechaHora" 
+            type="date" 
+            [(ngModel)]="vueloForm.fecha" 
             [disabled]="esFechaHoraDeshabilitada"
-            [min]="minFechaHora"
-            [max]="maxFechaHora">
+            [min]="minFecha"
+            [max]="maxFecha">
         </div>
         
-        <!-- El precio siempre se puede modificar -->
         <div class="form-group">
-          <label>Precio Unitario (COP)</label>
-          <input type="number" [(ngModel)]="vueloForm.precio" placeholder="Ej. 250000">
+          <label>Hora (Ej. 14:30)</label>
+          <input 
+            type="time" 
+            [(ngModel)]="vueloForm.horaVuelo" 
+            [disabled]="esFechaHoraDeshabilitada">
+        </div>
+
+      <div class="form-group">
+          <label>Hora de Llegada (Ej. 14:30)</label>
+          <input 
+            type="time" 
+            [(ngModel)]="vueloForm.horaLlegada" 
+            [disabled]="esFechaHoraDeshabilitada">
+        </div>
+      </div>
+
+      <!-- Precios Diferenciados -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Precio Económico (COP)</label>
+          <input type="number" [(ngModel)]="vueloForm.precioEconomico" placeholder="Ej. 250000">
+        </div>
+
+        <div class="form-group">
+          <label>Precio Primera Clase (COP)</label>
+          <input type="number" [(ngModel)]="vueloForm.precioPrimera" placeholder="Ej. 650000">
         </div>
       </div>
 

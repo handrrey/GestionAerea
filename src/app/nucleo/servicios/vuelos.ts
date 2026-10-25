@@ -11,19 +11,19 @@ export class VuelosService {
   constructor(private http: HttpClient) {}
 
   obtenerVuelos(): Observable<Vuelo[]> {
-    return this.http.get<Vuelo[]>(this.API_URL);
+    return this.http.get<Vuelo[]>(`${this.API_URL}`);
   }
 
   crearVuelo(vuelo: Vuelo): Observable<Vuelo> {
-    return this.http.post<Vuelo>(`${this.API_URL}/crear`, vuelo);
+    return this.http.post<Vuelo>(`${this.API_URL}`, vuelo);
   }
 
   editarVuelo(id: number, vuelo: Vuelo): Observable<Vuelo> {
-    return this.http.put<Vuelo>(`${this.API_URL}/editar/${id}`, vuelo);
+    return this.http.patch<Vuelo>(`${this.API_URL}/vuelos/${id}`, vuelo);
   }
 
   cancelarVuelo(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.API_URL}/cancelar/${id}`);
+    return this.http.delete<void>(`${this.API_URL}/vuelos/${id}`);
   }
 
  
