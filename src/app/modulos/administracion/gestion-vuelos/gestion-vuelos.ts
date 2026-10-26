@@ -29,25 +29,19 @@ export class GestionVuelosComponent implements OnInit {
     'Nueva York (NYC)', 'Buenos Aires (BUE)'
   ];
 
-  // 🟢 Tabla de duraciones estimadas estándar (en minutos) entre ciudades
   private duracionesMinutos: { [clave: string]: number } = {
-    // Desde Pereira
     'PEI-BOG': 55,  'PEI-MDE': 45,  'PEI-CLO': 45,  'PEI-CTG': 80,
     'PEI-MIA': 230, 'PEI-MAD': 600, 'PEI-LON': 630, 'PEI-NYC': 340, 'PEI-BUE': 380,
 
-    // Desde Bogotá
     'BOG-MDE': 60,  'BOG-CLO': 60,  'BOG-CTG': 85,  'BOG-PEI': 55,
     'BOG-MIA': 220, 'BOG-MAD': 580, 'BOG-LON': 615, 'BOG-NYC': 330, 'BOG-BUE': 375,
 
-    // Desde Medellín
     'MDE-CLO': 60,  'MDE-CTG': 75,  'MDE-BOG': 60,  'MDE-PEI': 45,
     'MDE-MIA': 225, 'MDE-MAD': 590, 'MDE-LON': 625, 'MDE-NYC': 335, 'MDE-BUE': 385,
 
-    // Desde Cali
     'CLO-CTG': 100, 'CLO-BOG': 60,  'CLO-MDE': 60,  'CLO-PEI': 45,
     'CLO-MIA': 235, 'CLO-MAD': 600, 'CLO-LON': 635, 'CLO-NYC': 345, 'CLO-BUE': 370,
 
-    // Desde Cartagena
     'CTG-BOG': 85,  'CTG-MDE': 75,  'CTG-CLO': 100, 'CTG-PEI': 80,
     'CTG-MIA': 170, 'CTG-MAD': 570, 'CTG-LON': 600, 'CTG-NYC': 290, 'CTG-BUE': 430
   };
@@ -55,6 +49,9 @@ export class GestionVuelosComponent implements OnInit {
   mostrarModal: boolean = false;
   editando: boolean = false;
   vueloForm: Vuelo = this.obtenerVueloVacio();
+
+  // Control para desplegar los errores en el modal
+  mensajeErrorModal: string = '';
 
   promocionesActivasCount: number = 3;
   mensajesSinResponderCount: number = 5;
@@ -72,8 +69,22 @@ export class GestionVuelosComponent implements OnInit {
 
   cargarVuelos(): void {
     this.vuelosService.obtenerVuelos().subscribe({
-      next: (datosBackend) => {
-        this.vuelos = datosBackend;
+      next: (datosBackend: any[]) => {
+        this.vuelos = (datosBackend || []).map(v => ({
+          ...v,
+          id: v.idVuelo || v.id || 0,
+          codigo: v.codigoVuelo || v.codigo || '',
+          origen: v.origen || '',
+          destino: v.destino || '',
+          fecha: v.fechaVuelo || v.fecha || '',
+          horaVuelo: v.horaVuelo || '',
+          duracionVuelo: v.duracion || v.duracionVuelo || '',
+          precioEconomico: Number(v.costoEconomico ?? v.precioEconomico ?? 0),
+          precioPrimera: Number(v.costoPrimera ?? v.precioPrimera ?? 0),
+          estado: v.estado || 'Programado',
+          reservasCount: Number(v.reservasTotal ?? v.reservasCount ?? 0)
+        }));
+
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -115,7 +126,6 @@ export class GestionVuelosComponent implements OnInit {
     this.actualizarDuracionAutomatica();
   }
 
-  // 🟢 Método para extraer el código IATA e instanciar la duración automática
   private actualizarDuracionAutomatica(): void {
     if (!this.vueloForm.origen || !this.vueloForm.destino) {
       return;
@@ -125,7 +135,7 @@ export class GestionVuelosComponent implements OnInit {
     const iataDestino = this.extraerIata(this.vueloForm.destino);
     const claveRuta = `${iataOrigen}-${iataDestino}`;
 
-    const minutos = this.duracionesMinutos[claveRuta] || 60; // 60 min por defecto
+    const minutos = this.duracionesMinutos[claveRuta] || 60;
     const horasCalculadas = Math.floor(minutos / 60);
     const minsCalculados = minutos % 60;
 
@@ -160,6 +170,7 @@ export class GestionVuelosComponent implements OnInit {
   abrirModalNuevo(): void {
     this.editando = false;
     this.vueloForm = this.obtenerVueloVacio();
+    this.mensajeErrorModal = '';
     this.mostrarModal = true;
   }
 
@@ -167,12 +178,14 @@ export class GestionVuelosComponent implements OnInit {
     if ((vuelo.estado || (vuelo as any).estado_vuelo) === 'Realizado') return;
     this.editando = true;
     this.vueloForm = { ...vuelo };
+    this.mensajeErrorModal = '';
     this.mostrarModal = true;
   }
 
   cerrarModal(): void {
     this.mostrarModal = false;
     this.vueloForm = this.obtenerVueloVacio();
+    this.mensajeErrorModal = '';
   }
 
   get minFecha(): string {
@@ -187,6 +200,9 @@ export class GestionVuelosComponent implements OnInit {
   }
 
   guardarVuelo(): void {
+    this.mensajeErrorModal = '';
+
+    // 1. Campos obligatorios
     if (
       !this.vueloForm.codigo || 
       !this.vueloForm.origen || 
@@ -197,10 +213,27 @@ export class GestionVuelosComponent implements OnInit {
       this.vueloForm.precioEconomico <= 0 || 
       this.vueloForm.precioPrimera <= 0
     ) {
-      alert('Por favor completa todos los campos correctamente.');
+      this.mensajeErrorModal = 'Por favor completa todos los campos correctamente.';
+      this.cdr.detectChanges();
       return;
     }
 
+    const codigoLimpio = this.vueloForm.codigo.trim();
+
+    // 2. Validación de Vuelo Duplicado (Si no estamos en modo edición)
+    if (!this.editando) {
+      const existeVueloProgramado = this.vuelos.some(v => 
+        v.codigo.trim().toUpperCase() === codigoLimpio.toUpperCase() && v.estado === 'Programado'
+      );
+
+      if (existeVueloProgramado) {
+        this.mensajeErrorModal = `El vuelo con código ${codigoLimpio} ya existe como un vuelo programado.`;
+        this.cdr.detectChanges();
+        return;
+      }
+    }
+
+    // 3. Validación de Fechas
     const fechaVueloStr = typeof this.vueloForm.fecha === 'string' 
       ? this.vueloForm.fecha 
       : new Date(this.vueloForm.fecha).toISOString().split('T')[0];
@@ -213,21 +246,32 @@ export class GestionVuelosComponent implements OnInit {
     const limiteAno = unAnoDespues.getTime();
 
     if (fechaVueloTime < ahora) {
-      alert('No es posible programar vuelos con fechas o horas pasadas.');
-      return;
-    }
-    if (fechaVueloTime > limiteAno) {
-      alert('Las aerolíneas no pueden programar vuelos con más de un año de anticipación.');
+      this.mensajeErrorModal = 'No es posible programar vuelos con fechas o horas pasadas.';
+      this.cdr.detectChanges();
       return;
     }
 
+    if (fechaVueloTime > limiteAno) {
+      this.mensajeErrorModal = 'Las aerolíneas no pueden programar vuelos con más de un año de anticipación.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.vueloForm.codigo = codigoLimpio;
+
+    // 4. Petición al Backend
     if (this.editando) {
       this.vuelosService.editarVuelo(this.vueloForm.id, this.vueloForm).subscribe({
         next: () => {
           this.cargarVuelos();
           this.cerrarModal();
         },
-        error: () => alert('Error al editar el vuelo en el servidor.')
+        error: (err) => {
+          console.error('Error al editar vuelo:', err);
+          const msjBackend = err.error?.message;
+          this.mensajeErrorModal = Array.isArray(msjBackend) ? msjBackend[0] : (msjBackend || 'Error al editar el vuelo en el servidor.');
+          this.cdr.detectChanges();
+        }
       });
     } else {
       const { id, ...payloadNuevoVuelo } = this.vueloForm;
@@ -239,7 +283,17 @@ export class GestionVuelosComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error al crear vuelo:', err);
-          alert('Error al crear el vuelo en el servidor.');
+          const msjBackend = err.error?.message;
+          
+          // Muestra el mensaje directo enviado desde el DTO / Controller de NestJS
+          if (Array.isArray(msjBackend)) {
+            this.mensajeErrorModal = msjBackend[0];
+          } else if (typeof msjBackend === 'string') {
+            this.mensajeErrorModal = msjBackend;
+          } else {
+            this.mensajeErrorModal = 'Error al crear el vuelo en el servidor.';
+          }
+          this.cdr.detectChanges();
         }
       });
     }
@@ -276,5 +330,11 @@ export class GestionVuelosComponent implements OnInit {
     return obj[camelKey] !== undefined && obj[camelKey] !== null 
       ? obj[camelKey] 
       : obj[snakeKey];
+  }
+
+  obtenerPrecioNumero(obj: any, camelKey: string, snakeKey: string): number {
+    const val = this.obtenerPropiedad(obj, camelKey, snakeKey);
+    const num = Number(val);
+    return isNaN(num) ? 0 : num;
   }
 }

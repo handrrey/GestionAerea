@@ -23,7 +23,7 @@ export class VuelosService {
   }
 
   cancelarVuelo(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.API_URL}/vuelos/${id}`);
+    return this.http.delete<void>(`${this.API_URL}/${id}`);
   }
 
  

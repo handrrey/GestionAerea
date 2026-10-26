@@ -89,61 +89,52 @@
           <tbody>
             <tr *ngFor="let vuelo of vuelos">
               <td>
-                <strong>{{ obtenerPropiedad(vuelo, 'codigo', 'codigo_vuelo') || '-' }}</strong>
+                <strong>{{ vuelo.codigo || '-' }}</strong>
               </td>
               <td>
-                {{ obtenerPropiedad(vuelo, 'origen', 'origen_vuelo') || '-' }} → 
-                {{ obtenerPropiedad(vuelo, 'destino', 'destino_vuelo') || '-' }}
+                {{ vuelo.origen || '-' }} → {{ vuelo.destino || '-' }}
               </td>
               <td>
-                {{ formatearFecha(obtenerPropiedad(vuelo, 'fecha', 'fecha_vuelo')) }} 
-                <span *ngIf="obtenerPropiedad(vuelo, 'horaVuelo', 'hora_vuelo')">
-                  - {{ obtenerPropiedad(vuelo, 'horaVuelo', 'hora_vuelo') }}
-                </span>
+                {{ formatearFecha(vuelo.fecha) }} 
+                <span *ngIf="vuelo.horaVuelo">- {{ vuelo.horaVuelo }}</span>
               </td>
               <td>
-                {{ obtenerPropiedad(vuelo, 'duracionVuelo', 'duracion') || '-' }} hs
+                {{ vuelo.duracionVuelo || '-' }} hs
               </td>
               <td>
                 <div style="font-size: 13px;">
-                  Econ: $ {{ (
-                    obtenerPropiedad(vuelo, 'precioEconomico', 'costo_economico') || 'costo_economico' || 'precioEconomico' || 
-                    0
-                  ) | number:'1.0-0' }}
+                  Econ: $ {{ vuelo.precioEconomico | number:'1.0-0' }}
                 </div>
                 <div style="font-size: 13px;">
-                  1ra: $ {{ (
-                    obtenerPropiedad(vuelo, 'precioPrimera', 'costo_primera') || 'costo_primera' || 'precioPrimera' || 
-                    0
-                  ) | number:'1.0-0' }}
+                  1ra: $ {{ vuelo.precioPrimera | number:'1.0-0' }}
                 </div>
               </td>
               <td>
-                <span class="badge-reservas" [class.has-reservas]="(obtenerPropiedad(vuelo, 'reservasCount', 'reservas_count') || 0) > 0">
-                  {{ obtenerPropiedad(vuelo, 'reservasCount', 'reservas_count') || 0 }} reserva(s)
+                <span class="badge-reservas" [class.has-reservas]="(vuelo.reservasCount || 0) > 0">
+                  {{ vuelo.reservasCount || 0 }} reserva(s)
                 </span>
               </td>
               <td>
                 <span class="status-tag" [ngClass]="{
-                  'status-scheduled': (obtenerPropiedad(vuelo, 'estado', 'estado_vuelo') || 'Programado') === 'Programado',
-                  'status-completed': (obtenerPropiedad(vuelo, 'estado', 'estado_vuelo')) === 'Realizado',
-                  'status-cancelled': (obtenerPropiedad(vuelo, 'estado', 'estado_vuelo')) === 'Cancelado'
+                  'status-scheduled': vuelo.estado === 'Programado',
+                  'status-completed': vuelo.estado === 'Realizado',
+                  'status-cancelled': vuelo.estado === 'Cancelado'
                 }">
-                  {{ obtenerPropiedad(vuelo, 'estado', 'estado_vuelo') || 'Programado' }}
+                  {{ vuelo.estado || 'Programado' }}
                 </span>
               </td>
               <td>
                 <button 
                   class="btn-action-edit" 
                   (click)="abrirModalEditar(vuelo)" 
-                  [disabled]="(obtenerPropiedad(vuelo, 'estado', 'estado_vuelo') || 'Programado') !== 'Programado'" 
-                  [style.opacity]="(obtenerPropiedad(vuelo, 'estado', 'estado_vuelo') || 'Programado') !== 'Programado' ? 0.5 : 1">
+                  [disabled]="vuelo.estado !== 'Programado'" 
+                  [style.opacity]="vuelo.estado !== 'Programado' ? 0.5 : 1">
                   Editar
                 </button>
                 <button 
                   class="btn-action-cancel" 
-                  (click)="cancelarVuelo(obtenerPropiedad(vuelo, 'id', 'id_vuelo'))" 
-                  *ngIf="(obtenerPropiedad(vuelo, 'estado', 'estado_vuelo') || 'Programado') === 'Programado'">
+                  (click)="cancelarVuelo(vuelo.id)" 
+                  *ngIf="vuelo.estado === 'Programado'">
                   Cancelar
                 </button>
               </td>
@@ -164,6 +155,13 @@
     </div>
     <div class="modal-body">
       
+      <!-- Banner de Error del Modal (Renderiza errores del Backend o Duplicados) -->
+      <div 
+        *ngIf="mensajeErrorModal" 
+        style="background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; padding: 10px 14px; border-radius: 6px; margin-bottom: 14px; font-size: 13px; font-weight: 500;">
+        ⚠️ {{ mensajeErrorModal }}
+      </div>
+
       <!-- Aviso de Restricción si está editando -->
       <div class="info-alert" *ngIf="editando">
         <span *ngIf="(vueloForm.reservasCount ?? 0) > 0">
@@ -176,7 +174,12 @@
 
       <div class="form-group">
         <label>Código del Vuelo</label>
-        <input type="text" name="codigo" [(ngModel)]="vueloForm.codigo" [disabled]="editando" placeholder="Ej. AV-103">
+        <input 
+          type="text" 
+          name="codigo" 
+          [(ngModel)]="vueloForm.codigo" 
+          [disabled]="editando" 
+          placeholder="Ej. GA-1002">
       </div>
 
       <!-- Desplegables Origen y Destino -->
@@ -226,7 +229,6 @@
             type="text" 
             name="duracionVuelo"
             [(ngModel)]="vueloForm.duracionVuelo" 
-            [disabled]="esFechaHoraDeshabilitada"
             readonly
             placeholder="Selecciona origen y destino">
         </div>
