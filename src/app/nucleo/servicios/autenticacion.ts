@@ -136,7 +136,7 @@ export class AutenticacionService {
 
   // Historia 7: Crear un Administrador (Solo ROOT) (listo sin validacion de solo root)
   crearAdministrador(nuevoAdmin: Usuario): Observable<UsuarioCreadoResponse> {
-    return this.http.post<UsuarioCreadoResponse>(`${this.API_URL}/crearAdmin`, nuevoAdmin);
+    return this.http.post<UsuarioCreadoResponse>(`${this.API_URL}/usuario/crearAdmin`, nuevoAdmin);
   }
 
   // Historia 8: Eliminar Administrador (Solo ROOT)
