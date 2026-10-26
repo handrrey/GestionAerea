@@ -380,15 +380,21 @@ export class GestionVuelosComponent implements OnInit {
           this.cerrarModal();
         },
         error: (err) => {
-          console.error('Error al crear vuelo:', err);
-          const msjBackend = err.error?.message;
-          if (Array.isArray(msjBackend)) {
-            this.mensajeErrorModal = msjBackend[0];
-          } else if (typeof msjBackend === 'string') {
-            this.mensajeErrorModal = msjBackend;
+          console.error('Error al guardar vuelo:', err);
+
+          if (err.status === 401) {
+            this.mensajeErrorModal = 'Tu sesión ha expirado o no tienes permisos. Inicia sesión nuevamente.';
           } else {
-            this.mensajeErrorModal = 'Error al crear el vuelo en el servidor.';
+            const msjBackend = err.error?.message;
+            if (Array.isArray(msjBackend)) {
+              this.mensajeErrorModal = msjBackend[0]; // Muestra el mensaje de @EsCodigo()
+            } else if (typeof msjBackend === 'string') {
+              this.mensajeErrorModal = msjBackend;
+            } else {
+              this.mensajeErrorModal = 'Error al procesar el vuelo en el servidor.';
+            }
           }
+
           this.cdr.detectChanges();
         }
       });

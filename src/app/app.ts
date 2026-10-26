@@ -10,13 +10,6 @@ import { AutenticacionService } from './nucleo/servicios/autenticacion';
   styleUrl: './app.css',
   templateUrl: './app.html',
 })
-export class App implements OnInit {
+export class App {
   protected readonly title = signal('GestionAerea');
-
-  constructor(private authService: AutenticacionService) {}
-
-  ngOnInit(): void {
-    // Al abrir o recargar la aplicación desde cero, limpia cualquier usuario guardado
-    this.authService.cerrarSesion();
-  }
 }
