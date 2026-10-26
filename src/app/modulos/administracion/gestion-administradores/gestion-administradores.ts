@@ -63,13 +63,27 @@ export class GestionAdministradoresComponent implements OnInit {
   }
 
   crearAdmin(): void {
-    const ccNumero = Number(this.nuevoAdmin.cc);
+    const ccStr = String(this.nuevoAdmin.cc || '').trim();
     const usuarioLimpio = (this.nuevoAdmin.usuario || '').trim();
     const emailLimpio = (this.nuevoAdmin.email || '').trim();
 
-    // 1. Validación de campos requeridos
-    if (!ccNumero || ccNumero <= 0 || usuarioLimpio === '' || emailLimpio === '') {
-      alert('Por favor completa el Documento (CC), Usuario y Correo Electrónico.');
+    // 1. Campos obligatorios
+    if (!ccStr || ccStr === '0' || usuarioLimpio === '' || emailLimpio === '') {
+      alert('Por favor completa todos los campos requeridos.');
+      return;
+    }
+
+    // 2. Validación de Cédula / Documento (Longitud de 8 a 10 dígitos)
+    const regexCedula = /^\d{8,10}$/;
+    if (!regexCedula.test(ccStr)) {
+      alert('Cédula inválida. Longitud de 8 a 10 dígitos.');
+      return;
+    }
+
+    // 3. Validación de Correo Electrónico
+    const regexEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!regexEmail.test(emailLimpio)) {
+      alert('Correo electrónico inválido.');
       return;
     }
 
@@ -78,19 +92,27 @@ export class GestionAdministradoresComponent implements OnInit {
       return;
     }
 
-    // 2. Asignamos la contraseña por defecto usando el número de documento/CC
+    // 4. Construcción de la contraseña provisional (Documento + Usuario)
+    const claveProvisional = `${ccStr}${usuarioLimpio}`;
+
+    // Validación de seguridad para la contraseña antes de enviar al backend
+    if (claveProvisional.length < 8) {
+      alert('La combinación de Cédula y Nombre de Usuario genera una contraseña demasiado corta. Debe sumar al menos 8 caracteres.');
+      return;
+    }
+
     const payloadAdmin: Partial<Usuario> = {
-      cc: ccNumero,
+      cc: Number(ccStr),
       usuario: usuarioLimpio,
       email: emailLimpio,
-      password: String(ccNumero), // 🟢 Contraseña inicial = Número de Documento
+      password: claveProvisional,
       rol: 'ADMIN'
     };
 
-    // 3. Petición HTTP al backend
+    // 5. Petición HTTP al backend
     this.autenticacionService.crearAdministrador(payloadAdmin as Usuario).subscribe({
       next: () => {
-        alert('Administrador creado exitosamente. Su contraseña inicial es su número de documento.');
+        alert(`Administrador creado exitosamente. Su contraseña inicial es: ${claveProvisional}`);
         this.limpiarFormulario();
         this.mostrarFormulario = false;
         this.cargarAdministradores();

@@ -1,0 +1,136 @@
+<div class="profile-card" *ngIf="usuarioActual">
+  <div class="header-text">
+    <h1 class="title">Perfil de Administrador</h1>
+    <p class="subtitle">Gestiona y actualiza la información de tu cuenta administrativa</p>
+  </div>
+
+  <!-- Alertas de éxito o error -->
+  <div class="alert alert-success" *ngIf="mensajeExito">{{ mensajeExito }}</div>
+  <div class="alert alert-error" *ngIf="mensajeError">{{ mensajeError }}</div>
+
+  <form (ngSubmit)="guardarCambios()">
+    
+    <!-- Sección Avatar -->
+    <div class="avatar-upload">
+      <div class="avatar-circle" (click)="fotoInput.click()">
+        <img *ngIf="imagenPreview" [src]="imagenPreview" alt="Foto perfil admin" class="avatar-img">
+        <span *ngIf="!imagenPreview">👤</span>
+      </div>
+      <span class="avatar-label" (click)="fotoInput.click()" style="cursor: pointer;">Cambiar foto de perfil de administrador</span>
+      <input type="file" #fotoInput (change)="onFotoSeleccionada($event)" accept="image/*" hidden>
+    </div>
+
+    <!-- Formulario Grid -->
+    <div class="form-grid">
+      
+      <!-- Cédula (BLOQUEADO) -->
+      <div class="form-group full-width">
+        <label for="cc">DNI / Cédula <span>🔒 (Dato Protegido)</span></label>
+        <input type="text" id="cc" [value]="usuarioActual.cc" disabled>
+      </div>
+
+      <!-- Nombre de Usuario (EDITABLE) -->
+      <div class="form-group full-width">
+        <label for="usuario">Usuario Administrador</label>
+        <input type="text" id="usuario" name="usuario" [(ngModel)]="usuarioActual.usuario" placeholder="Escribe tu usuario" required>
+      </div>
+
+      <!-- Nombres (EDITABLE) -->
+      <div class="form-group">
+        <label for="names">Nombres</label>
+        <input type="text" id="names" name="nombres" [(ngModel)]="usuarioActual.nombres" placeholder="Nombres" required>
+      </div>
+
+      <!-- Apellidos (EDITABLE) -->
+      <div class="form-group">
+        <label for="surnames">Apellidos</label>
+        <input type="text" id="surnames" name="apellidos" [(ngModel)]="usuarioActual.apellidos" placeholder="Apellidos" required>
+      </div>
+
+      <!-- Fecha de Nacimiento (EDITABLE) -->
+      <div class="form-group">
+        <label for="birthdate">Fecha de Nacimiento</label>
+        <input 
+          type="date" 
+          [(ngModel)]="usuarioActual.fechaNacimiento" 
+          name="fechaNacimiento" 
+          id="fechaNacimiento"
+          [min]="fechaMinima" 
+          [max]="fechaMaxima" 
+          required
+        >
+      </div>
+
+      <!-- Lugar de Nacimiento (EDITABLE) -->
+      <div class="form-group" style="position: relative;">
+        <label for="lugarNacimiento">Lugar de Nacimiento</label>
+        <input 
+          #cajaLugar
+          type="text" 
+          [(ngModel)]="usuarioActual.lugarNacimiento" 
+          (input)="alEscribirLugar(cajaLugar.value)"
+          name="lugarNacimiento" 
+          id="lugarNacimiento"
+          autocomplete="off"
+          placeholder="Escribe una ciudad..."
+          required
+        >
+        <!-- Menú desplegable dinámico -->
+        <ul class="lista-lugares" *ngIf="lugares.length > 0">
+          <li *ngFor="let lugar of lugares" (click)="seleccionarLugar(lugar)">
+            {{ lugar }}
+          </li>
+        </ul>
+      </div>
+
+      <!-- Género (EDITABLE) -->
+      <div class="form-group">
+        <label for="gender">Género</label>
+        <select 
+          id="gender" 
+          [(ngModel)]="usuarioActual.genero" 
+          name="genero" 
+          required
+        >
+          <option value="" disabled selected>Selecciona una opción</option>
+          <option value="Masculino">Masculino</option>
+          <option value="Femenino">Femenino</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+
+      <!-- Correo Electrónico (BLOQUEADO) -->
+      <div class="form-group full-width">
+        <label for="email">Correo Electrónico <span>🔒 (Dato Protegido)</span></label>
+        <input type="email" id="email" [(ngModel)]="emailEdit" name="email" disabled>
+      </div>
+
+      <!-- Dirección de Facturación / Contacto (EDITABLE) -->
+      <div class="form-group full-width">
+        <label for="address">Dirección de Contacto / Facturación *</label>
+        <input type="text" id="address" [(ngModel)]="direccionEdit" name="address" required>
+      </div>
+
+      <!-- Nueva Contraseña (EDITABLE) -->
+      <div class="form-group">
+        <label for="password">Nueva Contraseña</label>
+        <input type="password" id="password" [(ngModel)]="passwordNueva" name="password" placeholder="••••••••">
+      </div>
+
+      <!-- Confirmar Contraseña (EDITABLE) -->
+      <div class="form-group">
+        <label for="confirm-password">Confirmar Contraseña</label>
+        <input type="password" id="confirm-password" [(ngModel)]="confirmarPassword" name="confirmPassword" placeholder="••••••••">
+      </div>
+
+      <!-- Botones -->
+      <div class="form-group full-width">
+        <div class="button-group">
+          <button type="button" class="btn-cancel" (click)="cancelar($event)">CANCELAR</button>
+          <button type="submit" class="btn-save">GUARDAR CAMBIOS</button>
+        </div>
+      </div>
+
+    </div>
+  </form>
+</div>
