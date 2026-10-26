@@ -19,7 +19,7 @@ export class VuelosService {
   }
 
   editarVuelo(id: number, vuelo: Vuelo): Observable<Vuelo> {
-    return this.http.patch<Vuelo>(`${this.API_URL}/vuelos/${id}`, vuelo);
+    return this.http.patch<Vuelo>(`${this.API_URL}/${id}`, vuelo);
   }
 
   cancelarVuelo(id: number): Observable<void> {

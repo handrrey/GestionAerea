@@ -177,9 +177,58 @@ export class GestionVuelosComponent implements OnInit {
   abrirModalEditar(vuelo: Vuelo): void {
     if ((vuelo.estado || (vuelo as any).estado_vuelo) === 'Realizado') return;
     this.editando = true;
-    this.vueloForm = { ...vuelo };
     this.mensajeErrorModal = '';
+
+    // Normalizamos la fecha a formato ISO (YYYY-MM-DD) para el input type="date"
+    let fechaFormateada = '';
+    const rawFecha: any = vuelo.fecha || (vuelo as any).fechaVuelo;
+
+    if (rawFecha) {
+      if (typeof rawFecha === 'string') {
+        fechaFormateada = rawFecha.split('T')[0];
+      } else if (rawFecha instanceof Date) {
+        fechaFormateada = rawFecha.toISOString().split('T')[0];
+      } else {
+        const d = new Date(rawFecha);
+        if (!isNaN(d.getTime())) {
+          fechaFormateada = d.toISOString().split('T')[0];
+        }
+      }
+    }
+
+    const vAny = vuelo as any;
+    const origenRaw = vuelo.origen || vAny.origen || vAny.origen_vuelo || '';
+    const destinoRaw = vuelo.destino || vAny.destino || vAny.destino_vuelo || '';
+
+    // Busca coincidencia en las listas con código IATA para rellenar los desplegables
+    const origenCoincidencia = this.ciudadesOrigen.find(c => 
+      c.toLowerCase().includes(origenRaw.toLowerCase())
+    ) || origenRaw;
+
+    const destinoCoincidencia = this.ciudadesDestino.find(c => 
+      c.toLowerCase().includes(destinoRaw.toLowerCase())
+    ) || destinoRaw;
+
+    this.vueloForm = {
+      id: vuelo.id || vAny.idVuelo || 0,
+      codigo: vuelo.codigo || vAny.codigoVuelo || '',
+      origen: origenCoincidencia,
+      destino: destinoCoincidencia,
+      fecha: fechaFormateada as any,
+      horaVuelo: vuelo.horaVuelo || vAny.hora_vuelo || '',
+      duracionVuelo: vuelo.duracionVuelo || vAny.duracion || '',
+      precioEconomico: Number(vuelo.precioEconomico ?? vAny.costoEconomico ?? 0),
+      precioPrimera: Number(vuelo.precioPrimera ?? vAny.costoPrimera ?? 0),
+      estado: vuelo.estado || vAny.estado_vuelo || 'Programado',
+      reservasCount: Number(vuelo.reservasCount ?? vAny.reservasTotal ?? 0)
+    };
+
+    if (!this.vueloForm.duracionVuelo) {
+      this.actualizarDuracionAutomatica();
+    }
+
     this.mostrarModal = true;
+    this.cdr.detectChanges();
   }
 
   cerrarModal(): void {
@@ -197,6 +246,35 @@ export class GestionVuelosComponent implements OnInit {
     const unAnoDespues = new Date();
     unAnoDespues.setFullYear(unAnoDespues.getFullYear() + 1);
     return unAnoDespues.toISOString().split('T')[0];
+  }
+
+  private convertirHoraA24h(horaStr: string): string {
+    if (!horaStr) return '00:00';
+
+    let h = 0;
+    let m = 0;
+
+    // Detectar si incluye 'p. m.' / 'pm' o 'a. m.' / 'am'
+    const strLower = horaStr.toLowerCase();
+    const esPM = strLower.includes('p');
+    const esAM = strLower.includes('a');
+
+    // Extraer solo los números de horas y minutos
+    const numeros = horaStr.match(/\d+/g);
+    if (!numeros || numeros.length < 2) {
+      return '00:00';
+    }
+
+    h = parseInt(numeros[0], 10);
+    m = parseInt(numeros[1], 10);
+
+    if (esPM && h < 12) h += 12;
+    if (esAM && h === 12) h = 0;
+
+    const hh = String(h).padStart(2, '0');
+    const mm = String(m).padStart(2, '0');
+
+    return `${hh}:${mm}`;
   }
 
   guardarVuelo(): void {
@@ -220,32 +298,30 @@ export class GestionVuelosComponent implements OnInit {
 
     const codigoLimpio = this.vueloForm.codigo.trim();
 
-    // 2. Validación de Vuelo Duplicado (Si no estamos en modo edición)
-    if (!this.editando) {
-      const existeVueloProgramado = this.vuelos.some(v => 
-        v.codigo.trim().toUpperCase() === codigoLimpio.toUpperCase() && v.estado === 'Programado'
-      );
+    // 2. Formateo estricto de Fecha (YYYY-MM-DD) y Hora (HH:mm)
+    let fechaVueloStr = '';
+    const rawFecha: any = this.vueloForm.fecha;
 
-      if (existeVueloProgramado) {
-        this.mensajeErrorModal = `El vuelo con código ${codigoLimpio} ya existe como un vuelo programado.`;
-        this.cdr.detectChanges();
-        return;
-      }
+    if (typeof rawFecha === 'string') {
+      fechaVueloStr = rawFecha.split('T')[0];
+    } else if (rawFecha instanceof Date) {
+      fechaVueloStr = rawFecha.toISOString().split('T')[0];
+    } else {
+      const d = new Date(rawFecha);
+      fechaVueloStr = !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : '';
     }
 
+    const hora24h = this.convertirHoraA24h(this.vueloForm.horaVuelo);
+
     // 3. Validación de Fechas
-    const fechaVueloStr = typeof this.vueloForm.fecha === 'string' 
-      ? this.vueloForm.fecha 
-      : new Date(this.vueloForm.fecha).toISOString().split('T')[0];
-      
-    const fechaVueloTime = new Date(`${fechaVueloStr}T${this.vueloForm.horaVuelo}`).getTime();
+    const fechaVueloTime = new Date(`${fechaVueloStr}T${hora24h}:00`).getTime();
     const ahora = new Date().getTime();
     
     const unAnoDespues = new Date();
     unAnoDespues.setFullYear(unAnoDespues.getFullYear() + 1);
     const limiteAno = unAnoDespues.getTime();
 
-    if (fechaVueloTime < ahora) {
+    if (isNaN(fechaVueloTime) || fechaVueloTime < ahora) {
       this.mensajeErrorModal = 'No es posible programar vuelos con fechas o horas pasadas.';
       this.cdr.detectChanges();
       return;
@@ -261,7 +337,21 @@ export class GestionVuelosComponent implements OnInit {
 
     // 4. Petición al Backend
     if (this.editando) {
-      this.vuelosService.editarVuelo(this.vueloForm.id, this.vueloForm).subscribe({
+      const payloadEditar = {
+        codigo: this.vueloForm.codigo,
+        origen: this.vueloForm.origen,
+        destino: this.vueloForm.destino,
+        fecha: fechaVueloStr,
+        horaVuelo: hora24h,
+        duracionVuelo: this.vueloForm.duracionVuelo,
+        precioEconomico: Number(this.vueloForm.precioEconomico),
+        precioPrimera: Number(this.vueloForm.precioPrimera),
+        estado: this.vueloForm.estado
+      };
+
+      console.log('>>> ENVIANDO PAYLOAD AL BACKEND:', payloadEditar);
+
+      this.vuelosService.editarVuelo(this.vueloForm.id, payloadEditar as any).subscribe({
         next: () => {
           this.cargarVuelos();
           this.cerrarModal();
@@ -269,12 +359,20 @@ export class GestionVuelosComponent implements OnInit {
         error: (err) => {
           console.error('Error al editar vuelo:', err);
           const msjBackend = err.error?.message;
-          this.mensajeErrorModal = Array.isArray(msjBackend) ? msjBackend[0] : (msjBackend || 'Error al editar el vuelo en el servidor.');
+          if (Array.isArray(msjBackend)) {
+            this.mensajeErrorModal = msjBackend[0];
+          } else if (typeof msjBackend === 'string') {
+            this.mensajeErrorModal = msjBackend;
+          } else {
+            this.mensajeErrorModal = 'Error al editar el vuelo en el servidor.';
+          }
           this.cdr.detectChanges();
         }
       });
     } else {
       const { id, ...payloadNuevoVuelo } = this.vueloForm;
+      payloadNuevoVuelo.fecha = fechaVueloStr as any;
+      payloadNuevoVuelo.horaVuelo = hora24h;
 
       this.vuelosService.crearVuelo(payloadNuevoVuelo as Vuelo).subscribe({
         next: () => {
@@ -284,8 +382,6 @@ export class GestionVuelosComponent implements OnInit {
         error: (err) => {
           console.error('Error al crear vuelo:', err);
           const msjBackend = err.error?.message;
-          
-          // Muestra el mensaje directo enviado desde el DTO / Controller de NestJS
           if (Array.isArray(msjBackend)) {
             this.mensajeErrorModal = msjBackend[0];
           } else if (typeof msjBackend === 'string') {
