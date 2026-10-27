@@ -24,8 +24,8 @@ export class BilleteraService {
     return this.http.post<Tarjeta>(`${this.apiUrl}/billetera`, { idUsuario, ...payload });
   }
 
-  eliminarTarjeta(idTarjeta: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/billetera/${idTarjeta}`);
+  eliminarTarjeta(idTarjeta: number, idUsuario: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/billetera/${idTarjeta}?idUsuario=${idUsuario}`);
   }
 
   obtenerHistorial(idUsuario: number): Observable<Transaccion[]> {

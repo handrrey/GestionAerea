@@ -170,8 +170,9 @@
 
     <div class="cards-list">
       <div class="card-row" *ngFor="let t of tarjetas">
-        <span>💳 {{ t.franquicia }} **** {{ (t.numeroTarjeta || '').slice(-4) }}</span>
-        <button class="btn-delete" (click)="eliminarTarjeta(t.idTarjeta)">Eliminar 🗑️</button>
+        <span>💳 {{ t.franquicia }} **** {{ ((t.numeroTarjeta) || '').slice(-4) }}</span>
+        <!-- Pass the entire 't' object -->
+        <button class="btn-delete" (click)="eliminarTarjeta(t)">Eliminar 🗑️</button>
       </div>
       <p *ngIf="tarjetas.length === 0" style="font-size: 13px; color: #763CB4;">No tienes tarjetas asociadas para eliminar.</p>
     </div>
