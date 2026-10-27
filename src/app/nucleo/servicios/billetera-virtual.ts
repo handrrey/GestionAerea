@@ -8,27 +8,27 @@ import { EstadoBilletera, Tarjeta, Transaccion } from '../modelos/billetera-virt
 })
 export class BilleteraService {
 
-  private apiUrl = 'http://localhost:3000/billetera';
+  private apiUrl = 'http://localhost:3000/appV1';
 
   constructor(private http: HttpClient) {}
 
   obtenerEstadoBilletera(idUsuario: number): Observable<EstadoBilletera> {
-    return this.http.get<EstadoBilletera>(`${this.apiUrl}/usuario/${idUsuario}`);
+    return this.http.get<EstadoBilletera>(`${this.apiUrl}/billetera/${idUsuario}`);
   }
 
   recargarSaldo(idUsuario: number, monto: number, idTarjeta: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/recargar`, { idUsuario, monto, idTarjeta });
+    return this.http.patch(`${this.apiUrl}/billetera`, { idUsuario, monto, idTarjeta });
   }
 
   agregarTarjeta(idUsuario: number, payload: any): Observable<Tarjeta> {
-    return this.http.post<Tarjeta>(`${this.apiUrl}/tarjetas`, { idUsuario, ...payload });
+    return this.http.post<Tarjeta>(`${this.apiUrl}/billetera`, { idUsuario, ...payload });
   }
 
   eliminarTarjeta(idTarjeta: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/tarjetas/${idTarjeta}`);
+    return this.http.delete<void>(`${this.apiUrl}/billetera/${idTarjeta}`);
   }
 
   obtenerHistorial(idUsuario: number): Observable<Transaccion[]> {
-    return this.http.get<Transaccion[]>(`${this.apiUrl}/historial/${idUsuario}`);
+    return this.http.get<Transaccion[]>(`${this.apiUrl}/billetera/historial/${idUsuario}`);
   }
 }
