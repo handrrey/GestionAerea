@@ -4,6 +4,20 @@
     <p class="subtitle">Gestiona y actualiza tus datos personales de cuenta</p>
   </div>
 
+  <!-- 🟢 Botón Grande y Llamativo a la Billetera Virtual -->
+  <div class="wallet-banner-container">
+    <button type="button" class="btn-wallet-banner" routerLink="/billetera-virtual">
+      <div class="wallet-banner-content">
+        <span class="wallet-icon">💳</span>
+        <div class="wallet-text">
+          <span class="wallet-title">Billetera Virtual</span>
+          <span class="wallet-subtitle">Consulta tu saldo, recarga y revisa tus métodos de pago</span>
+        </div>
+      </div>
+      <span class="wallet-arrow">➔</span>
+    </button>
+  </div>
+
   <!-- Alertas de éxito o error -->
   <div class="alert alert-success" *ngIf="mensajeExito">{{ mensajeExito }}</div>
   <div class="alert alert-error" *ngIf="mensajeError">{{ mensajeError }}</div>
@@ -48,56 +62,56 @@
       </div>
 
       <!-- Fecha de Nacimiento (EDITABLE) -->
-        <div class="form-group">
-          <label for="birthdate">Fecha de Nacimiento</label>
-          <input 
-            type="date" 
-            [(ngModel)]="usuarioActual.fechaNacimiento" 
-            name="fechaNacimiento" 
-            id="fechaNacimiento"
-            [min]="fechaMinima" 
-            [max]="fechaMaxima" 
-            required
-          >
-        </div>
+      <div class="form-group">
+        <label for="birthdate">Fecha de Nacimiento</label>
+        <input 
+          type="date" 
+          [(ngModel)]="usuarioActual.fechaNacimiento" 
+          name="fechaNacimiento" 
+          id="fechaNacimiento"
+          [min]="fechaMinima" 
+          [max]="fechaMaxima" 
+          required
+        >
+      </div>
 
       <!-- Lugar de Nacimiento (EDITABLE) -->
-        <div class="form-group" style="position: relative;">
-          <label for="lugarNacimiento">Lugar de Nacimiento</label>
-          <input 
-            #cajaLugar
-            type="text" 
-            [(ngModel)]="usuarioActual.lugarNacimiento" 
-            (input)="alEscribirLugar(cajaLugar.value)"
-            name="lugarNacimiento" 
-            id="lugarNacimiento"
-            autocomplete="off"
-            placeholder="Escribe una ciudad..."
-            required
-          >
-          <!-- Menú desplegable dinámico -->
-          <ul class="lista-lugares" *ngIf="lugares.length > 0">
-            <li *ngFor="let lugar of lugares" (click)="seleccionarLugar(lugar)">
-              {{ lugar }}
-            </li>
-          </ul>
-        </div>
+      <div class="form-group" style="position: relative;">
+        <label for="lugarNacimiento">Lugar de Nacimiento</label>
+        <input 
+          #cajaLugar
+          type="text" 
+          [(ngModel)]="usuarioActual.lugarNacimiento" 
+          (input)="alEscribirLugar(cajaLugar.value)"
+          name="lugarNacimiento" 
+          id="lugarNacimiento"
+          autocomplete="off"
+          placeholder="Escribe una ciudad..."
+          required
+        >
+        <!-- Menú desplegable dinámico -->
+        <ul class="lista-lugares" *ngIf="lugares.length > 0">
+          <li *ngFor="let lugar of lugares" (click)="seleccionarLugar(lugar)">
+            {{ lugar }}
+          </li>
+        </ul>
+      </div>
 
       <!-- Género (EDITABLE) -->
-        <div class="form-group">
-          <label for="gender">Género</label>
-          <select 
-            id="gender" 
-            [(ngModel)]="usuarioActual.genero" 
-            name="genero" 
-            required
-          >
-            <option value="" disabled selected>Selecciona una opción</option>
-            <option value="Masculino">Masculino</option>
-            <option value="Femenino">Femenino</option>
-            <option value="Otro">Otro</option>
-          </select>
-        </div>
+      <div class="form-group">
+        <label for="gender">Género</label>
+        <select 
+          id="gender" 
+          [(ngModel)]="usuarioActual.genero" 
+          name="genero" 
+          required
+        >
+          <option value="" disabled selected>Selecciona una opción</option>
+          <option value="Masculino">Masculino</option>
+          <option value="Femenino">Femenino</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
 
       <!-- Correo Electrónico (BLOQUEADO) -->
       <div class="form-group full-width">
@@ -122,14 +136,6 @@
         <label for="confirm-password">Confirmar Contraseña</label>
         <input type="password" id="confirm-password" [(ngModel)]="confirmarPassword" name="confirmPassword" placeholder="••••••••">
       </div>
-
-      <!-- Suscripción 
-      <div class="form-group full-width">
-        <div class="checkbox-group">
-          <input type="checkbox" id="news" [(ngModel)]="suscritoNoticiasEdit" name="news" style="accent-color: var(--accent);">
-          <label for="news" style="margin: 0; font-weight: 500;">Suscrito al sistema de noticias y promociones</label>
-        </div>
-      </div>-->
 
       <!-- Botones -->
       <div class="form-group full-width">

@@ -1,0 +1,206 @@
+<div class="wallet-page-container">
+  <div class="main-card">
+    
+    <!-- Encabezado Principal -->
+    <div class="page-header">
+      <h1 class="page-title">Billetera Financiera Virtual</h1>
+      <p class="page-subtitle">Estado del saldo disponible para reservas y compras de tiquetes</p>
+    </div>
+
+    <!-- Alertas -->
+    <div class="alert alert-success" *ngIf="mensajeExito">
+      ✅ {{ mensajeExito }}
+    </div>
+    <div class="alert alert-error" *ngIf="mensajeError">
+      ⚠️ {{ mensajeError }}
+    </div>
+
+    <!-- Tarjeta Morada de Saldo (Con un SOLO botón principal) -->
+    <div class="balance-card">
+      <span class="balance-label">SALDO DISPONIBLE EN CUENTA</span>
+      <h2 class="balance-amount">${{ saldo | number }} COP</h2>
+      
+      <div class="currency-tag">
+        <span class="flag-icon">🇨🇴</span> Moneda Oficial: Pesos Colombianos (COP)
+      </div>
+
+      <div class="balance-actions">
+        <button class="btn-recharge-white" (click)="mostrarModalRecarga = true">
+          + Añadir Saldo
+        </button>
+      </div>
+    </div>
+
+    <!-- Panel de 4 Botones de Acción de la Billetera -->
+    <div class="action-buttons-grid">
+      <button class="btn-wallet-action" (click)="abrirModalAgregarTarjeta()">
+        <span class="action-icon">➕💳</span>
+        <span class="action-text">Añadir Tarjeta</span>
+      </button>
+
+      <button class="btn-wallet-action" (click)="mostrarModalEliminarTarjeta = true">
+        <span class="action-icon">🗑️💳</span>
+        <span class="action-text">Eliminar Tarjeta</span>
+      </button>
+
+      <button class="btn-wallet-action" (click)="mostrarModalConsultarTarjetas = true">
+        <span class="action-icon">🔍💳</span>
+        <span class="action-text">Consultar Tarjetas</span>
+      </button>
+
+      <button class="btn-wallet-action" (click)="toggleHistorial()">
+        <span class="action-icon">📊</span>
+        <span class="action-text">Historial de Transacciones</span>
+      </button>
+    </div>
+
+    <!-- Sección de Historial de Movimientos -->
+    <div class="history-section" *ngIf="verHistorial">
+      <div class="history-header">
+        <h3 class="history-title">📊 Historial Reciente de Movimientos de Billetera</h3>
+        <span class="history-subtitle">Expresado en COP</span>
+      </div>
+
+      <div *ngIf="cargando" class="loading-state">
+        🔄 Cargando historial de movimientos...
+      </div>
+
+      <div *ngIf="!cargando && historial.length === 0" class="no-history">
+        No registras transacciones recientes con el saldo de tu billetera.
+      </div>
+
+      <!-- Lista de Movimientos -->
+      <div class="history-list" *ngIf="!cargando && historial.length > 0">
+        <div class="history-item" *ngFor="let item of historial">
+          
+          <div class="item-icon-box" [ngClass]="item.tipo.toLowerCase()">
+            <span *ngIf="item.tipo === 'REEMBOLSO'">↩️</span>
+            <span *ngIf="item.tipo === 'COMPRA'">🛒</span>
+            <span *ngIf="item.tipo === 'RECARGA'">💳</span>
+          </div>
+
+          <div class="item-details">
+            <h4 class="item-concept">{{ item.concepto }}</h4>
+            <p class="item-meta">{{ item.fecha }} | {{ item.referencia || 'Transacción Billetera' }}</p>
+          </div>
+
+          <div class="item-monto" [class.positive]="item.monto > 0" [class.negative]="item.monto < 0">
+            <span *ngIf="item.monto > 0">+ </span>
+            <span *ngIf="item.monto < 0">- </span>
+            ${{ Math.abs(item.monto) | number }} COP
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL 1: AÑADIR SALDO -->
+<div class="modal-backdrop" *ngIf="mostrarModalRecarga">
+  <div class="modal-card">
+    <h3 class="modal-title">Añadir Saldo a Billetera</h3>
+    
+    <div class="form-group">
+      <label>Monto a Añadir (COP)</label>
+      <input type="number" [(ngModel)]="montoRecarga" min="10000" step="10000">
+    </div>
+
+    <div class="form-group">
+      <label>Seleccionar Tarjeta de Crédito / Débito</label>
+      <select [(ngModel)]="tarjetaSeleccionadaId">
+        <option *ngFor="let t of tarjetas" [value]="t.idTarjeta">
+          {{ t.franquicia || t.tipoTarjeta }} **** {{ (t.numeroTarjeta || '').slice(-4) }}
+        </option>
+      </select>
+      <p *ngIf="tarjetas.length === 0" class="no-card-warn">⚠️ No tienes tarjetas registradas. Añade una primero.</p>
+    </div>
+
+    <div class="modal-buttons">
+      <button class="btn-cancel" (click)="mostrarModalRecarga = false">Cancelar</button>
+      <button class="btn-confirm" (click)="procesarRecarga()" [disabled]="tarjetas.length === 0">Procesar Recarga</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 2: AÑADIR TARJETA -->
+<div class="modal-backdrop" *ngIf="mostrarModalAgregarTarjeta">
+  <div class="modal-card">
+    <h3 class="modal-title">Añadir Nueva Tarjeta</h3>
+
+    <div class="form-group">
+      <label>Número de Tarjeta</label>
+      <input type="text" [(ngModel)]="nuevaTarjeta.numeroTarjeta" placeholder="1234 5678 9012 3456" maxlength="16">
+    </div>
+
+    <div class="form-group">
+      <label>Tipo de Tarjeta</label>
+      <select [(ngModel)]="nuevaTarjeta.tipoTarjeta">
+        <option value="Crédito">Crédito</option>
+        <option value="Débito">Débito</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Franquicia</label>
+      <select [(ngModel)]="nuevaTarjeta.franquicia">
+        <option value="Visa">Visa</option>
+        <option value="Mastercard">Mastercard</option>
+        <option value="AMEX">American Express</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Fecha de Expiración (MM/AA)</label>
+      <input type="text" [(ngModel)]="nuevaTarjeta.fechaExpiracion" placeholder="12/28" maxlength="5">
+    </div>
+
+    <div class="modal-buttons">
+      <button class="btn-cancel" (click)="mostrarModalAgregarTarjeta = false">Cancelar</button>
+      <button class="btn-confirm" (click)="guardarTarjeta()">Guardar Tarjeta</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 3: ELIMINAR TARJETA -->
+<div class="modal-backdrop" *ngIf="mostrarModalEliminarTarjeta">
+  <div class="modal-card">
+    <h3 class="modal-title">Eliminar Tarjetas</h3>
+
+    <div class="cards-list">
+      <div class="card-row" *ngFor="let t of tarjetas">
+        <span>💳 {{ t.franquicia }} **** {{ (t.numeroTarjeta || '').slice(-4) }}</span>
+        <button class="btn-delete" (click)="eliminarTarjeta(t.idTarjeta)">Eliminar 🗑️</button>
+      </div>
+      <p *ngIf="tarjetas.length === 0" style="font-size: 13px; color: #763CB4;">No tienes tarjetas asociadas para eliminar.</p>
+    </div>
+
+    <div class="modal-buttons">
+      <button class="btn-cancel" (click)="mostrarModalEliminarTarjeta = false">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 4: CONSULTAR TARJETAS EN BILLETERA -->
+<div class="modal-backdrop" *ngIf="mostrarModalConsultarTarjetas">
+  <div class="modal-card">
+    <h3 class="modal-title">Tarjetas Guardadas en tu Billetera</h3>
+
+    <div class="cards-detail-list">
+      <div class="card-detail-item" *ngFor="let t of tarjetas">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <strong style="color: var(--primary); font-size: 14px;">{{ t.franquicia }} ({{ t.tipoTarjeta }})</strong>
+          <span style="font-size: 11px; background: var(--soft); padding: 2px 6px; border-radius: 4px; font-weight: bold;">Activa</span>
+        </div>
+        <p style="margin-top: 6px; font-size: 13px; font-weight: 700;">**** **** **** {{ (t.numeroTarjeta || '').slice(-4) }}</p>
+        <p style="margin-top: 4px; font-size: 11px; color: var(--secondary);">Expiración: {{ t.fechaExpiracion }}</p>
+      </div>
+      <p *ngIf="tarjetas.length === 0" style="font-size: 13px; color: #763CB4;">No tienes tarjetas registradas en la billetera.</p>
+    </div>
+
+    <div class="modal-buttons">
+      <button class="btn-cancel" (click)="mostrarModalConsultarTarjetas = false">Cerrar</button>
+    </div>
+  </div>
+</div>

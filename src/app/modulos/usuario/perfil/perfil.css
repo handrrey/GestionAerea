@@ -274,3 +274,65 @@
 .lista-lugares li:hover {
   background-color: #D3AFFB;
 }
+
+/* Botón Destacado de Billetera Virtual */
+.wallet-banner-container {
+  margin-bottom: 25px;
+}
+
+.btn-wallet-banner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #521E89 0%, #763CB4 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 14px;
+  padding: 16px 22px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(82, 30, 137, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-wallet-banner:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(82, 30, 137, 0.35);
+  background: linear-gradient(135deg, #763CB4 0%, #521E89 100%);
+}
+
+.wallet-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.wallet-icon {
+  font-size: 28px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 12px;
+  border-radius: 12px;
+}
+
+.wallet-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.wallet-title {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.wallet-subtitle {
+  font-size: 12px;
+  color: #D3AFFB;
+  margin-top: 2px;
+}
+
+.wallet-arrow {
+  font-size: 18px;
+  font-weight: 800;
+}

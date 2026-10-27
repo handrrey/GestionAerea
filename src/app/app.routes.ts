@@ -10,6 +10,7 @@ import { GestionVuelosComponent } from './modulos/administracion/gestion-vuelos/
 import { PerfilAdminComponent } from './modulos/administracion/perfil-admin/perfil-admin';
 import { BuscarVuelosParametrizadosComponent } from './modulos/usuario/buscar-vuelos-parametrizados/buscar-vuelos-parametrizados';
 import { VuelosDisponiblesComponent } from './modulos/usuario/vuelos-disponibles/vuelos-disponibles';
+import { BilleteraVirtualComponent } from './modulos/usuario/billetera-virtual/billetera-virtual';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -23,5 +24,6 @@ export const routes: Routes = [
   { path: 'perfil-admin', component: PerfilAdminComponent },
   { path: 'buscar-vuelos-parametrizados', component: BuscarVuelosParametrizadosComponent },
   { path: 'vuelos-disponibles', component: VuelosDisponiblesComponent },
+  { path: 'billetera-virtual', component: BilleteraVirtualComponent },
   { path: '**', redirectTo: 'home' }
 ];
