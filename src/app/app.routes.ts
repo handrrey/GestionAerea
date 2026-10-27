@@ -9,6 +9,7 @@ import { GestionAdministradoresComponent } from './modulos/administracion/gestio
 import { GestionVuelosComponent } from './modulos/administracion/gestion-vuelos/gestion-vuelos';
 import { PerfilAdminComponent } from './modulos/administracion/perfil-admin/perfil-admin';
 import { BuscarVuelosParametrizadosComponent } from './modulos/usuario/buscar-vuelos-parametrizados/buscar-vuelos-parametrizados';
+import { VuelosDisponiblesComponent } from './modulos/usuario/vuelos-disponibles/vuelos-disponibles';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -21,5 +22,6 @@ export const routes: Routes = [
   { path: 'gestion-vuelos', component: GestionVuelosComponent },
   { path: 'perfil-admin', component: PerfilAdminComponent },
   { path: 'buscar-vuelos-parametrizados', component: BuscarVuelosParametrizadosComponent },
+  { path: 'vuelos-disponibles', component: VuelosDisponiblesComponent },
   { path: '**', redirectTo: 'home' }
 ];

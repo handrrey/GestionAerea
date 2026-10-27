@@ -1,1 +1,58 @@
-<p>vuelos-disponibles works!</p>
+<div class="disponibilidad-page-container">
+  <div class="main-card">
+    
+    <div class="page-header">
+      <h1 class="page-title">Vuelos Disponibles en Tiempo Real</h1>
+      <p class="page-subtitle">Consulta el estado actualizado de sillas y rutas programadas</p>
+    </div>
+
+    <!-- Indicador de Carga -->
+    <div *ngIf="cargando" class="loading-state">
+      🔄 Cargando itinerario completo de vuelos...
+    </div>
+
+    <!-- Estado sin Vuelos Programados -->
+    <div *ngIf="!cargando && vuelosProgramados.length === 0" class="no-results-alert">
+      ⚠️ En este momento no hay vuelos en estado programado en el sistema.
+    </div>
+
+    <!-- Tarjetas de Lista General sin buscador -->
+    <div *ngIf="!cargando && vuelosProgramados.length > 0">
+      <div class="flight-card" *ngFor="let vuelo of vuelosProgramados">
+        
+        <div class="flight-info-main">
+          <span class="flight-code-tag">VUELO {{ vuelo.codigo }} | {{ vuelo.estado }}</span>
+          
+          <div class="route-times">
+            <div class="time-city">
+              <h3>{{ vuelo.origen }}</h3>
+            </div>
+
+            <div class="flight-duration">
+              <span class="duration-label">DURACIÓN ESTIMADA</span>
+              <span class="duration-time">── {{ vuelo.duracionVuelo || 'Directo' }} ──</span>
+              <p class="flight-date-tag">📅 {{ vuelo.fecha }} | ⏰ {{ vuelo.horaVuelo }}</p>
+            </div>
+
+            <div class="time-city">
+              <h3>{{ vuelo.destino }}</h3>
+            </div>
+          </div>
+
+          <span class="seats-availability">✓ Vuelo Programado Disponible</span>
+        </div>
+
+        <div class="flight-action-box">
+          <div>
+            <span class="price-label">Desde</span>
+            <div class="price-amount">${{ vuelo.precioEconomico | number }} COP</div>
+            <span class="price-label-first-class">Primera Clase: <strong>${{ vuelo.precioPrimera | number }} COP</strong></span>
+          </div>
+          <button class="btn-add-cart">SELECCIONAR / RESERVAR 🛒</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
