@@ -81,10 +81,10 @@
 
           <div class="item-details">
             <h4 class="item-concept">{{ item.concepto }}</h4>
-            <p class="item-meta">{{ item.fecha }} | {{ item.referencia || 'Transacción Billetera' }}</p>
+            <p class="item-meta">{{ item.fecha }} | {{ item.referencia }}</p>
           </div>
 
-          <div class="item-monto" [class.positive]="item.monto > 0" [class.negative]="item.monto < 0">
+          <div class="item-monto" [class.positive]="item.monto >= 0" [class.negative]="item.monto < 0">
             <span *ngIf="item.monto > 0">+ </span>
             <span *ngIf="item.monto < 0">- </span>
             ${{ Math.abs(item.monto) | number }} COP
@@ -191,11 +191,17 @@
     <div class="cards-detail-list">
       <div class="card-detail-item" *ngFor="let t of tarjetas">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <strong style="color: var(--primary); font-size: 14px;">{{ t.franquicia }} ({{ t.tipoTarjeta }})</strong>
+          <strong style="color: var(--primary); font-size: 14px;">
+            {{ t.franquicia }} ({{ t.tipoTarjeta }})
+          </strong>
           <span style="font-size: 11px; background: var(--soft); padding: 2px 6px; border-radius: 4px; font-weight: bold;">Activa</span>
         </div>
-        <p style="margin-top: 6px; font-size: 13px; font-weight: 700;">**** **** **** {{ (t.numeroTarjeta || '').slice(-4) }}</p>
-        <p style="margin-top: 4px; font-size: 11px; color: var(--secondary);">Expiración: {{ t.fechaExpiracion }}</p>
+        <p style="margin-top: 6px; font-size: 13px; font-weight: 700;">
+          **** **** **** {{ (t.numeroTarjeta || '').slice(-4) }}
+        </p>
+        <p style="margin-top: 4px; font-size: 11px; color: var(--secondary);">
+          Expiración: {{ t.fechaExpiracion }}
+        </p>
       </div>
       <p *ngIf="tarjetas.length === 0" style="font-size: 13px; color: #763CB4;">No tienes tarjetas registradas en la billetera.</p>
     </div>

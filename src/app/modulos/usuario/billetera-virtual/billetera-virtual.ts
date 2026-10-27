@@ -76,7 +76,44 @@ export class BilleteraVirtualComponent implements OnInit {
     }
   }
 
+cargarHistorial(): void {
+    if (!this.idUsuario) return;
+
+    this.billeteraService.obtenerHistorial(this.idUsuario).subscribe({
+      next: (data: any) => {
+        const lista = Array.isArray(data) ? data : (data?.historial || []);
+
+        this.historial = lista.map((h: any) => {
+          // Extraemos la descripción de la columna 'info_historial' de la BD
+          const descripcion = h.info_historial || h.concepto || h.descripcion || 'Movimiento de Billetera';
+          const fechaRaw = h.fecha_transaccion || h.fecha || '';
+
+          return {
+            id_transaccion: h.id_historial || h.id_transaccion || h.idTransaccion,
+            concepto: descripcion,
+            fecha: typeof fechaRaw === 'string' ? fechaRaw.split('T')[0] : fechaRaw,
+            monto: Number(h.monto || h.valor || 0),
+            // Clasificación por tipo basada en la descripción
+            tipo: descripcion.toLowerCase().includes('incremento') || descripcion.toLowerCase().includes('recarga') 
+              ? 'RECARGA' 
+              : 'COMPRA',
+            referencia: `ID #${h.id_historial || h.id_transaccion || 'N/A'}`
+          };
+        });
+
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error al cargar historial:', err);
+        this.historial = [];
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   cargarDatosBilletera(): void {
+    if (!this.idUsuario) return;
+
     this.cargando = true;
     this.billeteraService.obtenerEstadoBilletera(this.idUsuario).subscribe({
       next: (data: any) => {
@@ -84,20 +121,31 @@ export class BilleteraVirtualComponent implements OnInit {
         this.idBilletera = b.id_billetera || b.idBilletera || 0;
         this.saldo = Number(b.saldo || 0);
 
-        this.tarjetas = (data.tarjetas || []).map((t: any) => ({
-          idTarjeta: t.id_tarjeta || t.idTarjeta,
-          idBilletera: t.id_billetera || t.idBilletera,
-          numeroTarjeta: t.numero_tarjeta || t.numeroTarjeta || '',
-          tipoTarjeta: t.tipo_tarjeta || t.tipoTarjeta || 'Débito',
-          franquicia: t.franquicia || 'Visa',
-          fechaExpiracion: typeof t.fecha_expiracion === 'string' 
-            ? t.fecha_expiracion.split('T')[0] 
-            : t.fecha_expiracion
-        }));
+        // Mapeo exhaustivo para las tarjetas en la vista y en los modales
+        this.tarjetas = (data.tarjetas || []).map((t: any) => {
+          const num = t.numero_tarjeta || t.numeroTarjeta || '';
+          const tipo = t.tipo_tarjeta || t.tipoTarjeta || 'Crédito';
+          const exp = t.fecha_expiracion || t.fechaExpiracion || '';
 
-        this.historial = data.historial || [];
+          return {
+            id_tarjeta: t.id_tarjeta || t.idTarjeta,
+            idTarjeta: t.id_tarjeta || t.idTarjeta,
+            id_billetera: t.id_billetera || t.idBilletera,
+            numero_tarjeta: num,
+            numeroTarjeta: num,
+            tipo_tarjeta: tipo,
+            tipoTarjeta: tipo,
+            franquicia: t.franquicia || 'Visa',
+            fecha_expiracion: typeof exp === 'string' ? exp.split('T')[0] : exp,
+            fechaExpiracion: typeof exp === 'string' ? exp.split('T')[0] : exp
+          };
+        });
+
         this.cargando = false;
         this.cdr.detectChanges();
+
+        // Cargamos los movimientos de la tabla
+        this.cargarHistorial();
       },
       error: (err: any) => {
         console.error('Error al cargar la billetera:', err);
