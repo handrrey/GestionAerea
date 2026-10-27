@@ -19,7 +19,7 @@ export class BilleteraVirtualComponent implements OnInit {
 
   Math = Math;
 
-  idUsuario: number = 1;
+  idUsuario: number = 0;
   idBilletera: number = 0;
   saldo: number = 0;
   tarjetas: Tarjeta[] = [];
@@ -47,6 +47,7 @@ export class BilleteraVirtualComponent implements OnInit {
   };
 
   ngOnInit(): void {
+    this.obtenerUsuarioAutenticado();
     this.cargarDatosBilletera();
   }
 
@@ -56,6 +57,23 @@ export class BilleteraVirtualComponent implements OnInit {
 
   abrirModalAgregarTarjeta(): void {
     this.mostrarModalAgregarTarjeta = true;
+  }
+
+// Método para obtener el ID real del usuario logueado en la aplicación
+  private obtenerUsuarioAutenticado(): void {
+    try {
+      const usuarioSesion = localStorage.getItem('app_usuario_actual');
+      if (usuarioSesion) {
+        const usuarioParsed = JSON.parse(usuarioSesion);
+        this.idUsuario = Number(usuarioParsed.id_usuario || usuarioParsed.idUsuario || 0);
+      }
+    } catch (e) {
+      console.error('Error al leer el usuario de la sesión:', e);
+    }
+
+    if (!this.idUsuario) {
+      this.mensajeError = 'No se encontró una sesión válida de usuario.';
+    }
   }
 
   cargarDatosBilletera(): void {
