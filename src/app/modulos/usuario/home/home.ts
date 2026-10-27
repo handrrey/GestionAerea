@@ -2,8 +2,6 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { VuelosService, FiltrosBusqueda } from '../../../nucleo/servicios/vuelos';
-import { Vuelo } from '../../../nucleo/modelos/vuelos.model';
 
 @Component({
   selector: 'app-home',
@@ -29,18 +27,13 @@ export class HomeComponent implements OnInit {
   destinoSeleccionado: string = '';
   fechaIda: string = '';
   fechaVuelta: string = '';
-  pasajeros: number = 1;
   rangoPrecio: string = 'Cualquiera';
 
   mensajeError: string = '';
-  cargando: boolean = false;
-  busquedaRealizada: boolean = false;
-  vuelosEncontrados: Vuelo[] = [];
 
   constructor(
-    private vuelosService: VuelosService,
     private router: Router,
-    private cdr: ChangeDetectorRef // Inyectamos ChangeDetectorRef para forzar renderizado inmediato
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {}
@@ -58,7 +51,6 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  // 🟢 Botón/Acción para omitir la fecha y buscar solo por Origen y Destino
   limpiarFecha(): void {
     this.fechaIda = '';
     this.fechaVuelta = '';
@@ -89,16 +81,10 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  private extraerNombreCiudad(ciudadStr: string): string {
-    if (!ciudadStr) return '';
-    return ciudadStr.split('(')[0].trim();
-  }
-
   buscarVuelos(): void {
     this.mensajeError = '';
-    this.vuelosEncontrados = [];
 
-    // 1. Validaciones de formulario
+    // Validaciones básicas de selección
     if (!this.origenSeleccionado || !this.destinoSeleccionado) {
       this.mensajeError = 'Selecciona la ciudad de origen y destino.';
       this.cdr.detectChanges();
@@ -122,94 +108,14 @@ export class HomeComponent implements OnInit {
       }
     }
 
-    // 2. Extracción de filtros
-    const origenLimpio = this.extraerNombreCiudad(this.origenSeleccionado);
-    const destinoLimpio = this.extraerNombreCiudad(this.destinoSeleccionado);
-
-    const filtros: FiltrosBusqueda = {
-      origen: origenLimpio,
-      destino: destinoLimpio,
-      fecha: this.fechaIda || undefined,
-      precioMaximo: this.rangoPrecio !== 'Cualquiera' ? Number(this.rangoPrecio) : undefined
-    };
-
-    this.cargando = true;
-    this.busquedaRealizada = true;
-    this.cdr.detectChanges(); // Renderiza de inmediato el indicador de carga
-
-    // 3. Petición al Backend y Filtrado Estricto
-    this.vuelosService.buscarVuelosParametrizados(filtros).subscribe({
-      next: (datosBackend: any[]) => {
-        const resultadosMapeados: Vuelo[] = (datosBackend || []).map(v => {
-          let rawFecha = v.fecha || v.fechaVuelo || v.fecha_vuelo || '';
-          let fechaStr = '';
-
-          if (typeof rawFecha === 'string') {
-            fechaStr = rawFecha.split('T')[0];
-          } else if (rawFecha instanceof Date) {
-            const d = new Date(rawFecha);
-            const a = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const dia = String(d.getDate()).padStart(2, '0');
-            fechaStr = `${a}-${m}-${dia}`;
-          }
-
-          return {
-            ...v,
-            id: v.id || v.idVuelo || v.id_vuelo || 0,
-            codigo: v.codigo || v.codigoVuelo || v.codigo_vuelo || 'GA-000',
-            origen: v.origen || v.origen_vuelo || '',
-            destino: v.destino || v.destino_vuelo || '',
-            fecha: fechaStr,
-            horaVuelo: v.horaVuelo || v.hora_vuelo || '',
-            duracionVuelo: v.duracionVuelo || v.duracion || v.duracion_vuelo || '',
-            precioEconomico: Number(v.precioEconomico ?? v.costoEconomico ?? v.costo_economico ?? 0),
-            precioPrimera: Number(v.precioPrimera ?? v.costoPrimera ?? v.costo_primera ?? 0),
-            estado: v.estado || v.estado_vuelo || 'Programado'
-          };
-        });
-
-        // 🟢 FILTRO ESTRICTO: Coincidencia de Origen, Destino, Fecha, Precio Y Estado "Programado"
-        this.vuelosEncontrados = resultadosMapeados.filter(v => {
-          // A. Condición obligatoria: SOLO VUELOS PROGRAMADOS
-          const esProgramado = (v.estado || '').toLowerCase() === 'programado';
-          if (!esProgramado) return false;
-
-          // B. Coincidencia de Origen y Destino
-          const vOrigen = (v.origen || '').toLowerCase();
-          const vDestino = (v.destino || '').toLowerCase();
-
-          const coincideOrigen = vOrigen.includes(origenLimpio.toLowerCase());
-          const coincideDestino = vDestino.includes(destinoLimpio.toLowerCase()) ||
-            (destinoLimpio.toLowerCase().includes('york') && vDestino.includes('york'));
-
-          // C. Coincidencia de Fecha (si el usuario la especificó)
-          let coincideFecha = true;
-          if (this.fechaIda && v.fecha) {
-            const fechaVueloStr = typeof v.fecha === 'string'
-              ? (v.fecha as string).split('T')[0]
-              : new Date(v.fecha as any).toISOString().split('T')[0];
-
-            coincideFecha = (fechaVueloStr === this.fechaIda);
-          }
-
-          // D. Coincidencia de Precio Máximo
-          let coincidePrecio = true;
-          if (filtros.precioMaximo) {
-            coincidePrecio = v.precioEconomico <= filtros.precioMaximo;
-          }
-
-          return coincideOrigen && coincideDestino && coincideFecha && coincidePrecio;
-        });
-
-        this.cargando = false;
-        this.cdr.detectChanges(); // Actualiza la UI al instante
-      },
-      error: (err) => {
-        console.error('Error al realizar la búsqueda parametrizada:', err);
-        this.cargando = false;
-        this.vuelosEncontrados = [];
-        this.cdr.detectChanges();
+    // Navegación explícita redirigiendo a la ruta con queryParams
+    this.router.navigate(['/buscar-vuelos-parametrizados'], {
+      queryParams: {
+        origen: this.origenSeleccionado,
+        destino: this.destinoSeleccionado,
+        fecha: this.fechaIda || null,
+        precioMaximo: this.rangoPrecio !== 'Cualquiera' ? this.rangoPrecio : null,
+        tipoViaje: this.tipoViaje
       }
     });
   }

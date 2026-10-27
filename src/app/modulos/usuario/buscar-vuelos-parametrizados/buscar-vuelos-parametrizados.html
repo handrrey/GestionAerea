@@ -1,0 +1,122 @@
+<div class="search-page-container">
+  <div class="main-card">
+    
+    <div class="page-header">
+      <h1 class="page-title">Búsqueda Avanzada de Vuelos</h1>
+      <p class="page-subtitle">Filtra itinerarios, consulta disponibilidad de sillas y compara tarifas</p>
+    </div>
+
+    <!-- Alerta de Error -->
+    <div class="alert-error" *ngIf="mensajeError">
+      ⚠️ {{ mensajeError }}
+    </div>
+
+    <!-- Formulario de Filtros Avanzados -->
+    <div class="filter-card">
+      <div class="filter-grid">
+        
+        <!-- Campo 1: Origen -->
+        <div class="filter-group">
+          <label>Origen</label>
+          <select [(ngModel)]="origenSeleccionado">
+            <option value="" disabled>Selecciona origen</option>
+            <option *ngFor="let ciudad of ciudadesOrigen" [value]="ciudad">{{ ciudad }}</option>
+          </select>
+        </div>
+
+        <!-- Campo 2: Destino -->
+        <div class="filter-group">
+          <label>Destino</label>
+          <select [(ngModel)]="destinoSeleccionado">
+            <option value="" disabled>Selecciona destino</option>
+            <option *ngFor="let ciudad of destinosDisponibles" [value]="ciudad">{{ ciudad }}</option>
+          </select>
+        </div>
+
+        <!-- Campo 3: Fecha de Salida -->
+        <div class="filter-group">
+          <div class="label-with-action">
+            <label>Fecha de Salida</label>
+            <button type="button" class="btn-link-action" (click)="limpiarFecha()">Cualquier fecha</button>
+          </div>
+          <input type="date" [(ngModel)]="fechaIda" [min]="minFecha" [max]="maxFecha">
+        </div>
+
+        <!-- Campo 4: Rango de Precio (Ocupa la parte inferior o grid limpia) -->
+        <div class="filter-group">
+          <label>Rango Máximo (COP)</label>
+          <select [(ngModel)]="rangoPrecio">
+            <option value="Cualquiera">Cualquier precio</option>
+            <option value="1000000">Hasta $1'000.000 COP</option>
+            <option value="3000000">Hasta $3'000.000 COP</option>
+            <option value="5000000">Hasta $5'000.000 COP</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="filter-actions">
+        <span class="active-filter-text">
+          Filtros activos: {{ origenSeleccionado || 'Origen' }} ➔ {{ destinoSeleccionado || 'Destino' }}
+        </span>
+        <button class="btn-search-apply" (click)="ejecutarBusqueda()">APLICAR FILTROS Y BUSCAR</button>
+      </div>
+    </div>
+
+    <!-- Encabezado de Resultados -->
+    <div class="results-header" *ngIf="!cargando && vuelosEncontrados.length > 0">
+      <span class="results-count">{{ vuelosEncontrados.length }} Vuelo(s) encontrado(s) para tu ruta</span>
+    </div>
+
+    <!-- Estado de Carga -->
+    <div *ngIf="cargando" class="loading-state">
+      🔄 Buscando vuelos disponibles...
+    </div>
+
+    <!-- Alerta Vuelo No Encontrado -->
+    <div *ngIf="!cargando && vuelosEncontrados.length === 0" class="no-results-alert">
+      ⚠️ Vuelo no encontrado o existente en estado programado.
+    </div>
+
+    <!-- Tarjetas de Vuelos Encontrados -->
+    <div *ngIf="!cargando && vuelosEncontrados.length > 0">
+      <div class="flight-card" *ngFor="let vuelo of vuelosEncontrados">
+        
+        <div class="flight-info-main">
+          <span class="flight-code-tag">VUELO {{ vuelo.codigo }} | {{ vuelo.estado }}</span>
+          
+          <div class="route-times">
+            <div class="time-city">
+              <h3>{{ vuelo.horaVuelo }}</h3>
+              <p>{{ vuelo.origen }}</p>
+            </div>
+
+            <!-- Columna central con Texto de Duración -->
+            <div class="flight-duration">
+              <span class="duration-label">DURACIÓN ESTIMADA</span>
+              <span class="duration-time">── {{ vuelo.duracionVuelo || 'Directo' }} ──</span>
+              <p class="flight-date-tag">📅 {{ vuelo.fecha }}</p>
+            </div>
+
+            <div class="time-city">
+              <h3>{{ vuelo.destino }}</h3>
+            </div>
+          </div>
+
+          <span class="seats-availability">✓ Vuelo Programado Disponible</span>
+        </div>
+
+        <div class="flight-action-box">
+          <div>
+            <span class="price-label">Económica desde</span>
+            <div class="price-amount">${{ vuelo.precioEconomico | number }} COP</div>
+            <span class="price-label-first-class">Primera Clase: <strong>${{ vuelo.precioPrimera | number }} COP</strong></span>
+          </div>
+          <button class="btn-add-cart">SELECCIONAR VUELO 🛒</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>

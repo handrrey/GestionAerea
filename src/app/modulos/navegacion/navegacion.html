@@ -7,7 +7,8 @@
 
   <ul class="nav-links">
     <li><a routerLink="/home">Inicio</a></li>
-    <li><a routerLink="/inicio-sesion">Buscar Vuelos</a></li>
+    <li><a routerLink="/buscar-vuelos-parametrizados">Buscar Vuelos</a></li>
+    <li><a routerLink="/promociones">Vuelos Disponibles</a></li>
     <li><a routerLink="/inicio-sesion">Noticias y Promos</a></li>
     <li *ngIf="usuarioActual && usuarioActual.rol === 'CLIENTE'">
       <a routerLink="/perfil">Mi Perfil</a>
