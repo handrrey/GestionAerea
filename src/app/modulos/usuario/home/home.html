@@ -1,4 +1,4 @@
-<!-- Hero Section con Gradiente -->
+<!-- Hero Section -->
 <header class="hero-section">
   <h1 class="hero-title">¡Encuentra tu próximo destino!</h1>
   <p class="hero-subtitle">Reserva y compra tiquetes nacionales e internacionales al mejor precio</p>
@@ -7,7 +7,6 @@
 <!-- Buscador Principal Flotante -->
 <div class="search-container">
   
-  <!-- Selección de Tipo de Viaje -->
   <div class="search-tabs">
     <label>
       <input 
@@ -29,25 +28,23 @@
     </label>
   </div>
 
-  <!-- Alerta de Error de Validación -->
   <div class="alert-error" *ngIf="mensajeError">
     ⚠️ {{ mensajeError }}
   </div>
 
-  <!-- Formulario Grid (Se ajusta dinámicamente según 'tipoViaje') -->
   <form (ngSubmit)="buscarVuelos()">
     <div class="search-grid" [class.has-return]="tipoViaje === 'IDA_Y_VUELTA'">
       
-      <!-- Campo 1: Origen -->
+      <!-- Origen -->
       <div class="field-group">
         <label>Origen</label>
         <select [(ngModel)]="origenSeleccionado" name="origen" (change)="onOrigenChange()" required>
           <option value="" disabled selected>Selecciona origen</option>
-          <option *ngFor="let ciudad of ciudades" [value]="ciudad">{{ ciudad }}</option>
+          <option *ngFor="let ciudad of ciudadesOrigen" [value]="ciudad">{{ ciudad }}</option>
         </select>
       </div>
 
-      <!-- Campo 2: Destino -->
+      <!-- Destino -->
       <div class="field-group">
         <label>Destino</label>
         <select [(ngModel)]="destinoSeleccionado" name="destino" [disabled]="!origenSeleccionado" required>
@@ -56,7 +53,7 @@
         </select>
       </div>
 
-      <!-- Campo 3: Fecha de Salida -->
+      <!-- Fecha de Salida con Botón "Cualquier fecha" -->
       <div class="field-group">
         <label>Fecha de Salida</label>
         <input 
@@ -64,11 +61,22 @@
           [(ngModel)]="fechaIda" 
           name="fechaIda"
           [min]="minFecha" 
-          [max]="maxFecha" 
-          required>
+          [max]="maxFecha">
+
+        <!-- Opción estilo radio button ubicada debajo del input -->
+        <div class="any-date-option">
+          <label class="radio-label">
+            <input 
+              type="checkbox" 
+              [checked]="!fechaIda" 
+              (change)="limpiarFecha()">
+            <span class="custom-radio"></span>
+            Cualquier fecha
+          </label>
+        </div>
       </div>
 
-      <!-- Campo 4 (OPCIONAL): Fecha de Regreso (Aparece únicamente si es 'Ida y vuelta') -->
+      <!-- Fecha de Regreso -->
       <div class="field-group" *ngIf="tipoViaje === 'IDA_Y_VUELTA'">
         <label>Fecha de Regreso</label>
         <input 
@@ -76,11 +84,10 @@
           [(ngModel)]="fechaVuelta" 
           name="fechaVuelta"
           [min]="fechaIda || minFecha" 
-          [max]="maxFecha" 
-          required>
+          [max]="maxFecha">
       </div>
 
-      <!-- Campo 5: Rango de Precio -->
+      <!-- Rango de Precio -->
       <div class="field-group">
         <label>Rango de Precio</label>
         <select [(ngModel)]="rangoPrecio" name="rangoPrecio">
@@ -90,14 +97,43 @@
         </select>
       </div>
 
-      <!-- Botón de Búsqueda -->
       <button type="submit" class="btn-search">BUSCAR</button>
     </div>
   </form>
 </div>
 
-<!-- Catálogo de Promociones (Módulo de Noticias) -->
-<section class="catalog-section">
+<!-- Sección de Resultados de la Búsqueda Parametrizada -->
+<section class="catalog-section" *ngIf="busquedaRealizada">
+  <div class="section-header">
+    <h2 class="section-title">Vuelos Encontrados</h2>
+  </div>
+
+  <div *ngIf="cargando" style="text-align: center; margin: 2rem 0; color: #763CB4; font-weight: bold;">
+    🔄 Buscando vuelos disponibles...
+  </div>
+
+  <!-- 🟢 Alerta en caso de no existir o no encontrar vuelos al 100% -->
+  <div *ngIf="!cargando && vuelosEncontrados.length === 0" 
+       style="background-color: #FFF3CD; color: #856404; border: 1px solid #FFEEBA; border-radius: 8px; padding: 1.25rem; text-align: center; margin: 1.5rem auto; max-width: 600px; font-weight: bold;">
+    ⚠️ Vuelo no encontrado o existente.
+  </div>
+
+  <!-- Tarjetas de vuelos encontrados -->
+  <div class="cards-grid" *ngIf="!cargando && vuelosEncontrados.length > 0">
+    <div class="card" *ngFor="let vuelo of vuelosEncontrados">
+      <div class="card-body">
+        <h3 class="card-title">{{ vuelo.codigo }} ({{ vuelo.origen }} ➔ {{ vuelo.destino }})</h3>
+        <p>📅 {{ vuelo.fecha || 'Fecha N/A' }} | ⏰ {{ vuelo.horaVuelo }}</p>
+        <p class="card-price">Económica: ${{ vuelo.precioEconomico | number }} COP</p>
+        <p class="card-price">Primera Clase: ${{ vuelo.precioPrimera | number }} COP</p>
+        <button class="btn-card">Seleccionar Vuelo</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Catálogo de Promociones -->
+<section class="catalog-section" *ngIf="!busquedaRealizada">
   <div class="section-header">
     <h2 class="section-title">Promociones y Vuelos Destacados</h2>
   </div>
@@ -132,5 +168,5 @@
   </div>
 </section>
 
-<!-- Widget del Chatbot Flotante -->
+<!-- Widget Chatbot -->
 <div class="chatbot-widget" title="Asistente de ayuda">💬</div>
