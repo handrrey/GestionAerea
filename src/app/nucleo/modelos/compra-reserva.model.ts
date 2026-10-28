@@ -3,7 +3,7 @@ export interface CompraReserva {
     codigoReserva?: string;
     idUsuario: number;
     montoTotal: number;
-    estado: 'RESERVADO' | 'PAGADO' | 'CANCELADO' | 'EXPIRADO';
+    estado: 'Pendiente' | 'Pagado' | 'Cancelado' | 'Expirado';
     metodoPago?: string; // 'BILLETERA', 'TARJETA', 'PENDIENTE', etc.
     fechaReserva?: string | Date;
     fechaLimitePago?: string | Date;
