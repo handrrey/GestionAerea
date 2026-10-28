@@ -77,39 +77,55 @@ export class BilleteraVirtualComponent implements OnInit {
   }
 
 cargarHistorial(): void {
-    if (!this.idUsuario) return;
+  if (!this.idUsuario) return;
 
-    this.billeteraService.obtenerHistorial(this.idUsuario).subscribe({
-      next: (data: any) => {
-        const lista = Array.isArray(data) ? data : (data?.historial || []);
+  this.billeteraService.obtenerHistorial(this.idUsuario).subscribe({
+    next: (data: any) => {
+      const lista = Array.isArray(data) ? data : (data?.historial || []);
 
-        this.historial = lista.map((h: any) => {
-          // Extraemos la descripción de la columna 'info_historial' de la BD
-          const descripcion = h.info_historial || h.concepto || h.descripcion || 'Movimiento de Billetera';
-          const fechaRaw = h.fecha_transaccion || h.fecha || '';
+      this.historial = lista.map((h: any) => {
+        const descripcion = h.info_historial || h.concepto || h.descripcion || 'Movimiento de Billetera';
+        const fechaRaw = h.fecha_transaccion || h.fecha || '';
 
-          return {
-            id_transaccion: h.id_historial || h.id_transaccion || h.idTransaccion,
-            concepto: descripcion,
-            fecha: typeof fechaRaw === 'string' ? fechaRaw.split('T')[0] : fechaRaw,
-            monto: Number(h.monto || h.valor || 0),
-            // Clasificación por tipo basada en la descripción
-            tipo: descripcion.toLowerCase().includes('incremento') || descripcion.toLowerCase().includes('recarga') 
-              ? 'RECARGA' 
-              : 'COMPRA',
-            referencia: `ID #${h.id_historial || h.id_transaccion || 'N/A'}`
-          };
-        });
+        let montoCalculado = Number(h.monto || h.valor || 0);
 
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => {
-        console.error('Error al cargar historial:', err);
-        this.historial = [];
-        this.cdr.detectChanges();
-      }
-    });
-  }
+        const esRecarga = descripcion.toLowerCase().includes('incremento') || 
+                          descripcion.toLowerCase().includes('recarga') || 
+                          descripcion.toLowerCase().includes('añad');
+        
+        const esCompra = descripcion.toLowerCase().includes('compra') || 
+                         descripcion.toLowerCase().includes('pago') || 
+                         descripcion.toLowerCase().includes('descuento');
+
+        // 🟢 Si es un incremento/recarga y el monto viene en 0 de la BD,
+        // extraemos el valor que está guardado dentro del texto descriptivo
+        if (esRecarga && montoCalculado === 0) {
+          const numerosEncontrados = descripcion.match(/\d+/g);
+          if (numerosEncontrados && numerosEncontrados.length > 0) {
+            // Toma el número extraído de la descripción
+            montoCalculado = parseInt(numerosEncontrados[numerosEncontrados.length - 1], 10);
+          }
+        }
+
+        return {
+          id_transaccion: h.id_historial || h.id_transaccion || h.idTransaccion,
+          concepto: descripcion,
+          fecha: typeof fechaRaw === 'string' ? fechaRaw.split('T')[0] : fechaRaw,
+          monto: montoCalculado,
+          tipo: esRecarga ? 'RECARGA' : (esCompra ? 'COMPRA' : 'REEMBOLSO'),
+          referencia: `ID #${h.id_historial || h.id_transaccion || 'N/A'}`
+        };
+      });
+
+      this.cdr.detectChanges();
+    },
+    error: (err: any) => {
+      console.error('Error al cargar historial:', err);
+      this.historial = [];
+      this.cdr.detectChanges();
+    }
+  });
+}
 
   cargarDatosBilletera(): void {
     if (!this.idUsuario) return;

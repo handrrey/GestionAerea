@@ -74,9 +74,9 @@
         <div class="history-item" *ngFor="let item of historial">
           
           <div class="item-icon-box" [ngClass]="item.tipo.toLowerCase()">
-            <span *ngIf="item.tipo === 'REEMBOLSO'">↩️</span>
-            <span *ngIf="item.tipo === 'COMPRA'">🛒</span>
             <span *ngIf="item.tipo === 'RECARGA'">💳</span>
+            <span *ngIf="item.tipo === 'COMPRA'">🛒</span>
+            <span *ngIf="item.tipo === 'REEMBOLSO'">⚙️</span>
           </div>
 
           <div class="item-details">
@@ -84,10 +84,14 @@
             <p class="item-meta">{{ item.fecha }} | {{ item.referencia }}</p>
           </div>
 
-          <div class="item-monto" [class.positive]="item.monto >= 0" [class.negative]="item.monto < 0">
-            <span *ngIf="item.monto > 0">+ </span>
-            <span *ngIf="item.monto < 0">- </span>
-            ${{ Math.abs(item.monto) | number }} COP
+          <!-- 🟢 Monto alineado a la derecha en VERDE para RECARGA y ROJO para COMPRA -->
+          <div class="item-monto" 
+               *ngIf="item.monto > 0" 
+                [class.positive]="item.tipo === 'RECARGA'" 
+                [class.negative]="item.tipo === 'COMPRA'">
+            <span *ngIf="item.tipo === 'RECARGA'">+ </span>
+            <span *ngIf="item.tipo === 'COMPRA'">- </span>
+            ${{ item.monto | number }} COP
           </div>
 
         </div>

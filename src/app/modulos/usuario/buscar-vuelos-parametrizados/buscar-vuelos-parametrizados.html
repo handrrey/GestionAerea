@@ -6,7 +6,7 @@
       <p class="page-subtitle">Filtra itinerarios, consulta disponibilidad de sillas y compara tarifas</p>
     </div>
 
-    <!-- Alerta de Error -->
+    <!-- Alerta de Error (Muestra mensaje si un VISITANTE intenta reservar) -->
     <div class="alert-error" *ngIf="mensajeError">
       ⚠️ {{ mensajeError }}
     </div>
@@ -42,7 +42,7 @@
           <input type="date" [(ngModel)]="fechaIda" [min]="minFecha" [max]="maxFecha">
         </div>
 
-        <!-- Campo 4: Rango de Precio (Ocupa la parte inferior o grid limpia) -->
+        <!-- Campo 4: Rango de Precio -->
         <div class="filter-group">
           <label>Rango Máximo (COP)</label>
           <select [(ngModel)]="rangoPrecio">
@@ -91,7 +91,6 @@
               <p>{{ vuelo.origen }}</p>
             </div>
 
-            <!-- Columna central con Texto de Duración -->
             <div class="flight-duration">
               <span class="duration-label">DURACIÓN ESTIMADA</span>
               <span class="duration-time">── {{ vuelo.duracionVuelo || 'Directo' }} ──</span>
@@ -112,7 +111,11 @@
             <div class="price-amount">${{ vuelo.precioEconomico | number }} COP</div>
             <span class="price-label-first-class">Primera Clase: <strong>${{ vuelo.precioPrimera | number }} COP</strong></span>
           </div>
-          <button class="btn-add-cart">SELECCIONAR VUELO 🛒</button>
+
+          <!-- 🟢 Botón integrado correctamente dentro del *ngFor de la tarjeta -->
+          <button class="btn-add-cart" (click)="seleccionarVuelo(vuelo)">
+            Seleccionar / Reservar ✈️
+          </button>
         </div>
 
       </div>

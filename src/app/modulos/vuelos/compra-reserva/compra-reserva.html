@@ -1,0 +1,139 @@
+<!-- Alertas de Mensajes -->
+<div class="alert-error-bar" *ngIf="mensajeError">
+  ⚠️ {{ mensajeError }}
+</div>
+
+<div class="alert-success-bar" *ngIf="mensajeExito">
+  ✅ {{ mensajeExito }}
+</div>
+
+<!-- MODAL DETALLE DE INFORMACIÓN DEL VUELO -->
+<div class="modal-backdrop" *ngIf="mostrarDetalleModal">
+  <div class="modal-card-detail">
+    <h2 class="modal-title">Información del Vuelo {{ vuelo.codigo }}</h2>
+    
+    <div class="flight-info-grid">
+      <div><strong>Código:</strong> {{ vuelo.codigo }}</div>
+      <div><strong>Duración:</strong> {{ vuelo.duracion }}</div>
+      <div><strong>Origen:</strong> {{ vuelo.origen }}</div>
+      <div><strong>Destino:</strong> {{ vuelo.destino }}</div>
+      <div><strong>Salida:</strong> {{ vuelo.fechaSalida | date:'medium' }}</div>
+      <div><strong>Llegada:</strong> {{ vuelo.fechaLlegada | date:'medium' }}</div>
+    </div>
+
+    <div class="modal-buttons-large">
+      <button class="btn-large btn-reserve" (click)="irAFormularioCompraReserva()">
+        📌 Reservar vuelo
+      </button>
+      <button class="btn-large btn-cart">
+        🛒 Añadir al carrito
+      </button>
+    </div>
+
+    <button class="btn-close-link" (click)="mostrarDetalleModal = false">Cerrar</button>
+  </div>
+</div>
+
+<!-- CONTENEDOR PRINCIPAL DE COMPRA-RESERVA -->
+<div class="container" *ngIf="mostrarCompraReservaPestana">
+  <div class="main-card">
+    
+    <div class="header-text">
+      <h1 class="title">Reserva y Compra de Tiquetes de Vuelo</h1>
+      <p class="subtitle">Separa tus asientos sin realizar el pago inmediato o gestiona tu compra</p>
+    </div>
+
+    <!-- Alerta de Validez 24h -->
+    <div class="expiration-alert-box">
+      <div class="alert-icon">⏳</div>
+      <div class="alert-content">
+        <h4>Observación Importante de Reserva (Validez 24 Horas):</h4>
+        <p>Esta reserva mantendrá reservados tus tiquetes por un tiempo máximo de <strong>24 horas</strong>. Si no realizas el pago antes del <strong>{{ fechaLimitePagoCalculada | date:'dd/MM/yyyy - hh:mm a' }}</strong>, la reserva expirará y los asientos se liberarán.</p>
+      </div>
+    </div>
+
+    <!-- Resumen del Vuelo y Selección de Pasajeros/Clase -->
+    <div class="flight-summary-box">
+      <div class="summary-details">
+        <span class="summary-title">Vuelo {{ vuelo.codigo }} ({{ vuelo.tipo }})</span>
+        <div class="summary-route">{{ vuelo.origen }} ➔ {{ vuelo.destino }} | {{ vuelo.fechaSalida | date:'dd MMM yyyy - HH:mm' }} HRS</div>
+        <div class="capacity-info">
+          Capacidad Total: {{ obtenerCapacidadAsientos().total }} asientos 
+          ({{ obtenerCapacidadAsientos().economicos }} Económicas, {{ obtenerCapacidadAsientos().primeraClase }} 1ra Clase)
+        </div>
+      </div>
+
+      <!-- Configuración a la Derecha -->
+      <div class="config-controls">
+        <div class="control-group">
+          <label>Pasajeros (Máx 5):</label>
+          <select [(ngModel)]="cantidadPasajeros" (change)="actualizarCantidadPasajeros()">
+            <option [ngValue]="1">1 Pasajero</option>
+            <option [ngValue]="2">2 Pasajeros</option>
+            <option [ngValue]="3">3 Pasajeros</option>
+            <option [ngValue]="4">4 Pasajeros</option>
+            <option [ngValue]="5">5 Pasajeros</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>Clase de Boleto:</label>
+          <select [(ngModel)]="claseSeleccionada">
+            <option value="ECONOMICA">Económica</option>
+            <option value="PRIMERA_CLASE">1ra Clase (+40%)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formularios Dinámicos para Pasajeros -->
+    <div *ngFor="let p of pasajeros; let i = index" class="pasajero-block">
+      <div class="section-title">
+        <span>👤 Datos del Pasajero {{ i + 1 }} {{ i === 0 ? '(Titular)' : '' }}</span>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nombres y Apellidos</label>
+          <input type="text" [(ngModel)]="p.nombreCompleto" placeholder="Ej: Juan Pérez" required>
+        </div>
+
+        <div class="form-group">
+          <label>Documento de Identidad (DNI/Pasaporte)</label>
+          <input type="text" [(ngModel)]="p.documento" placeholder="1098765432" required>
+        </div>
+
+        <div class="form-group">
+          <label>Correo Electrónico</label>
+          <input type="email" [(ngModel)]="p.email" placeholder="correo@ejemplo.com" required>
+        </div>
+
+        <div class="form-group">
+          <label>Teléfono de Contacto</label>
+          <input type="tel" [(ngModel)]="p.telefono" placeholder="3001234567" required>
+        </div>
+
+        <div class="form-group">
+          <label>Edad del Pasajero</label>
+          <input type="number" [(ngModel)]="p.edad" min="0" max="120" required>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Financiero -->
+    <div class="financial-box">
+      <div>
+        <span class="financial-label">VALOR A PAGAR POSTERIORMENTE:</span>
+        <p class="financial-subtext">Sin cargos inmediatos a tu Billetera Financiera</p>
+      </div>
+      <div class="price-total">${{ calcularMontoTotal() | number }} COP</div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="button-group">
+      <button type="button" class="btn-secondary" (click)="mostrarCompraReservaPestana = false">CANCELAR</button>
+      <button type="button" class="btn-confirm-reserve" (click)="confirmarReserva24H()">CONFIRMAR RESERVA (24H MÁXIMO) 📌</button>
+    </div>
+
+  </div>
+</div>

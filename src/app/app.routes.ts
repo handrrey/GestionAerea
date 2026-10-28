@@ -11,6 +11,7 @@ import { PerfilAdminComponent } from './modulos/administracion/perfil-admin/perf
 import { BuscarVuelosParametrizadosComponent } from './modulos/usuario/buscar-vuelos-parametrizados/buscar-vuelos-parametrizados';
 import { VuelosDisponiblesComponent } from './modulos/usuario/vuelos-disponibles/vuelos-disponibles';
 import { BilleteraVirtualComponent } from './modulos/usuario/billetera-virtual/billetera-virtual';
+import { CompraReservaComponent } from './modulos/vuelos/compra-reserva/compra-reserva';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -25,5 +26,6 @@ export const routes: Routes = [
   { path: 'buscar-vuelos-parametrizados', component: BuscarVuelosParametrizadosComponent },
   { path: 'vuelos-disponibles', component: VuelosDisponiblesComponent },
   { path: 'billetera-virtual', component: BilleteraVirtualComponent },
+  { path: 'compra-reserva', component: CompraReservaComponent },
   { path: '**', redirectTo: 'home' }
 ];

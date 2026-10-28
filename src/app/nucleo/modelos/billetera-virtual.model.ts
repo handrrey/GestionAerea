@@ -20,6 +20,7 @@ export interface Transaccion {
     fecha: string;
     monto: number;
     tipo: 'RECARGA' | 'COMPRA' | 'REEMBOLSO';
+    alteraSaldo?: boolean;
     referencia?: string;
 }
 

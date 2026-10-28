@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { VuelosService, FiltrosBusqueda } from '../../../nucleo/servicios/vuelos';
 import { Vuelo } from '../../../nucleo/modelos/vuelos.model';
 
@@ -36,12 +36,12 @@ export class BuscarVuelosParametrizadosComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private vuelosService: VuelosService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    // Escuchar parámetros de la URL enviados desde Home o ingresados directamente
     this.route.queryParams.subscribe(params => {
       if (params['origen']) this.origenSeleccionado = params['origen'];
       if (params['destino']) this.destinoSeleccionado = params['destino'];
@@ -133,7 +133,6 @@ export class BuscarVuelosParametrizadosComponent implements OnInit {
           };
         });
 
-        // Filtro estricto: Coincidencia de datos Y Estado "Programado"
         this.vuelosEncontrados = resultadosMapeados.filter(v => {
           const esProgramado = (v.estado || '').toLowerCase() === 'programado';
           if (!esProgramado) return false;
@@ -172,5 +171,37 @@ export class BuscarVuelosParametrizadosComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  // 🟢 Método para redireccionar a Compra/Reserva evaluando sesión
+  seleccionarVuelo(vuelo: Vuelo): void {
+    this.mensajeError = '';
+
+    const sesionStr = localStorage.getItem('app_usuario_actual');
+    if (!sesionStr) {
+      this.mensajeError = 'Debe ser cliente registrado para hacer reservas o compras.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    try {
+      const usuario = JSON.parse(sesionStr);
+      const rol = String(usuario.rol || 'VISITANTE').toUpperCase();
+
+      if (rol === 'VISITANTE') {
+        this.mensajeError = 'Debe ser cliente registrado para hacer reservas o compras.';
+        this.cdr.detectChanges();
+        return;
+      }
+
+      // Redirección pasando los datos estructurados del vuelo
+      this.router.navigate(['/usuario/compra-reserva'], {
+        state: { vuelo }
+      });
+
+    } catch (e) {
+      this.mensajeError = 'Debe ser cliente registrado para hacer reservas o compras.';
+      this.cdr.detectChanges();
+    }
   }
 }

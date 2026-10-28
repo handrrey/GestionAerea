@@ -1,0 +1,298 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  width: 100%;
+  /* Gradient morado global exactamente igual a la imagen */
+  background: linear-gradient(135deg, #521E89 0%, #763CB4 50%, #FAFAFA 100%);
+  padding: 40px 0;
+  box-sizing: border-box;
+}
+
+/* Alertas de Notificación */
+.alert-error-bar, .alert-success-bar {
+  max-width: 850px;
+  margin: 0 auto 20px auto;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.alert-error-bar {
+  background-color: #FEF2F2;
+  color: #991B1B;
+  border: 1px solid #FCA5A5;
+}
+
+.alert-success-bar {
+  background-color: #ECFDF5;
+  color: #065F46;
+  border: 1px solid #6EE7B7;
+}
+
+/* Modal Detalle */
+.modal-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1000;
+}
+
+.modal-card-detail {
+  background: #FFFFFF;
+  padding: 30px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+}
+
+.flight-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 20px 0;
+  font-size: 13px;
+  color: #521E89;
+}
+
+.modal-buttons-large {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.btn-large {
+  flex: 1;
+  height: 48px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-reserve { background: #521E89; color: white; }
+.btn-cart { background: #D3AFFB; color: #521E89; }
+
+.btn-close-link {
+  background: transparent;
+  border: none;
+  color: #763CB4;
+  margin-top: 15px;
+  width: 100%;
+  text-align: center;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Tarjeta Blanca Central */
+.container {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.main-card {
+  background: #FFFFFF;
+  padding: 35px;
+  border-radius: 20px;
+  border: 1px solid #D3AFFB;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+}
+
+.header-text {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #521E89;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #763CB4;
+  margin-top: 4px;
+}
+
+/* Alerta Amarilla de 24 Horas */
+.expiration-alert-box {
+  background-color: #FEF9E7;
+  border: 1px solid #F1C40F;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #7D6608;
+}
+
+.alert-icon { font-size: 24px; line-height: 1; }
+.alert-content h4 { font-size: 14px; font-weight: 800; }
+.alert-content p { font-size: 12px; margin-top: 2px; }
+
+/* Caja de Resumen del Vuelo */
+.flight-summary-box {
+  background-color: #FAFAFA;
+  border: 1px solid #D3AFFB;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.summary-details { flex: 1; }
+.summary-title { font-size: 15px; font-weight: 800; color: #521E89; }
+.summary-route { font-size: 13px; color: #763CB4; font-weight: 600; margin-top: 2px; }
+.capacity-info { font-size: 11px; color: #666666; margin-top: 4px; font-weight: 600; }
+
+.config-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.control-group label {
+  font-size: 11px;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 4px;
+  color: #521E89;
+}
+
+.control-group select {
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid #D3AFFB;
+  background-color: #FFFFFF;
+  font-size: 12px;
+  color: #521E89;
+  font-weight: 600;
+  outline: none;
+}
+
+/* Formularios de Pasajeros */
+.pasajero-block {
+  border-top: 1px solid #D3AFFB;
+  padding-top: 20px;
+  margin-top: 20px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #521E89;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #521E89;
+  margin-bottom: 4px;
+}
+
+.form-group input {
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #D3AFFB;
+  border-radius: 8px;
+  background-color: #FFFFFF;
+  color: #521E89;
+  font-size: 13px;
+  outline: none;
+}
+
+.form-group input:focus, .control-group select:focus {
+  border-color: #AC6EEF;
+}
+
+/* Resumen Financiero */
+.financial-box {
+  border-top: 1px solid #D3AFFB;
+  padding-top: 20px;
+  margin-top: 25px;
+  margin-bottom: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.financial-label {
+  font-size: 12px;
+  color: #763CB4;
+  font-weight: 700;
+}
+
+.financial-subtext {
+  font-size: 11px;
+  color: #666666;
+  margin-top: 2px;
+}
+
+.price-total {
+  font-size: 22px;
+  font-weight: 800;
+  color: #521E89;
+}
+
+/* Botones de Acción */
+.button-group {
+  display: flex;
+  gap: 15px;
+}
+
+.btn-secondary {
+  flex: 1;
+  height: 48px;
+  background-color: transparent;
+  border: 1px solid #521E89;
+  color: #521E89;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-confirm-reserve {
+  flex: 2;
+  height: 48px;
+  background-color: #521E89;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(82, 30, 137, 0.25);
+  transition: background-color 0.2s;
+}
+
+.btn-confirm-reserve:hover {
+  background-color: #763CB4;
+}

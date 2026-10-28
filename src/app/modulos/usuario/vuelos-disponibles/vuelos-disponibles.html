@@ -6,6 +6,11 @@
       <p class="page-subtitle">Consulta el estado actualizado de sillas y rutas programadas</p>
     </div>
 
+    <!-- Alerta de Error (Si un VISITANTE intenta reservar) -->
+    <div class="alert-error-bar" *ngIf="mensajeError" style="background: #f8d7da; color: #842029; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-weight: bold;">
+      ⚠️ {{ mensajeError }}
+    </div>
+
     <!-- Indicador de Carga -->
     <div *ngIf="cargando" class="loading-state">
       🔄 Cargando itinerario completo de vuelos...
@@ -16,7 +21,7 @@
       ⚠️ En este momento no hay vuelos en estado programado en el sistema.
     </div>
 
-    <!-- Tarjetas de Lista General sin buscador -->
+    <!-- Tarjetas de Lista General -->
     <div *ngIf="!cargando && vuelosProgramados.length > 0">
       <div class="flight-card" *ngFor="let vuelo of vuelosProgramados">
         
@@ -48,7 +53,11 @@
             <div class="price-amount">${{ vuelo.precioEconomico | number }} COP</div>
             <span class="price-label-first-class">Primera Clase: <strong>${{ vuelo.precioPrimera | number }} COP</strong></span>
           </div>
-          <button class="btn-add-cart">SELECCIONAR / RESERVAR 🛒</button>
+          
+          <!-- 🟢 Botón con evento (click) dentro de la tarjeta usando la variable 'vuelo' -->
+          <button class="btn-add-cart" (click)="seleccionarVuelo(vuelo)">
+            SELECCIONAR / RESERVAR ✈️
+          </button>
         </div>
 
       </div>

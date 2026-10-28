@@ -1,6 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { VuelosService } from '../../../nucleo/servicios/vuelos';
 import { Vuelo } from '../../../nucleo/modelos/vuelos.model';
 
@@ -15,9 +15,11 @@ export class VuelosDisponiblesComponent implements OnInit {
 
   vuelosProgramados: Vuelo[] = [];
   cargando: boolean = true;
+  mensajeError: string = '';
 
   constructor(
     private vuelosService: VuelosService,
+    private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -58,7 +60,6 @@ export class VuelosDisponiblesComponent implements OnInit {
           };
         });
 
-        // Filtrar STRICTAMENTE los que tengan estado "Programado"
         this.vuelosProgramados = resultadosMapeados.filter(v => 
           (v.estado || '').toLowerCase() === 'programado'
         );
@@ -73,5 +74,36 @@ export class VuelosDisponiblesComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  // 🟢 Redirección a Compra/Reserva
+  seleccionarVuelo(vuelo: Vuelo): void {
+    this.mensajeError = '';
+
+    const sesionStr = localStorage.getItem('app_usuario_actual');
+    if (!sesionStr) {
+      this.mensajeError = 'Debe ser cliente registrado para hacer reservas o compras.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    try {
+      const usuario = JSON.parse(sesionStr);
+      const rol = String(usuario.rol || 'VISITANTE').toUpperCase();
+
+      if (rol === 'VISITANTE') {
+        this.mensajeError = 'Debe ser cliente registrado para hacer reservas o compras.';
+        this.cdr.detectChanges();
+        return;
+      }
+
+      this.router.navigate(['/compra-reserva'], {
+        state: { vuelo }
+      });
+
+    } catch (e) {
+      this.mensajeError = 'Debe ser cliente registrado para hacer reservas o compras.';
+      this.cdr.detectChanges();
+    }
   }
 }
