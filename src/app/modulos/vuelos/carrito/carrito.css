@@ -1,0 +1,243 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #521E89 0%, #763CB4 50%, #FAFAFA 100%);
+  padding: 40px 0;
+  box-sizing: border-box;
+}
+
+.container {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.main-card {
+  background: #FFFFFF;
+  padding: 35px;
+  border-radius: 20px;
+  border: 1px solid #D3AFFB;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+}
+
+.header-text {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #521E89;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #763CB4;
+  margin-top: 4px;
+}
+
+/* Alertas */
+.alert-bar {
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.alert-success {
+  background-color: #ECFDF5;
+  color: #065F46;
+  border: 1px solid #6EE7B7;
+}
+
+.alert-error {
+  background-color: #FEF2F2;
+  color: #991B1B;
+  border: 1px solid #FCA5A5;
+}
+
+/* Estado Carrito Vacío */
+.empty-cart-state {
+  text-align: center;
+  padding: 50px 20px;
+  background-color: #FAFAFA;
+  border: 1px dashed #D3AFFB;
+  border-radius: 16px;
+  color: #521E89;
+}
+
+.empty-icon { font-size: 42px; margin-bottom: 12px; }
+.empty-cart-state h3 { font-size: 18px; font-weight: 800; }
+.empty-cart-state p { font-size: 13px; color: #763CB4; margin: 6px 0 20px 0; }
+
+.btn-explore {
+  background-color: #521E89;
+  color: #FFFFFF;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Resumen del Vuelo en Carrito */
+.flight-summary-box {
+  background-color: #FAFAFA;
+  border: 1px solid #D3AFFB;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-title { font-size: 15px; font-weight: 800; color: #521E89; }
+.summary-route { font-size: 13px; color: #763CB4; font-weight: 600; margin-top: 2px; }
+.summary-passengers { font-size: 11px; color: #666666; margin-top: 4px; font-weight: 600; }
+
+.summary-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.item-price {
+  font-size: 16px;
+  font-weight: 800;
+  color: #521E89;
+}
+
+.btn-remove-item {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+/* Selección del Medio de Pago */
+.section-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #521E89;
+  margin-bottom: 15px;
+  margin-top: 25px;
+}
+
+.payment-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+.payment-option {
+  border: 1px solid #D3AFFB;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  background-color: #FAFAFA;
+  transition: all 0.2s;
+}
+
+.payment-option:hover {
+  border-color: #AC6EEF;
+}
+
+.payment-option.active {
+  border: 2px solid #521E89;
+  background-color: #FFFFFF;
+}
+
+.option-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.option-name { font-size: 14px; color: #521E89; display: block; }
+.option-sub { font-size: 11px; color: #763CB4; margin-top: 2px; }
+
+.balance-status {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2ECC71;
+}
+
+.balance-status.insufficient {
+  color: #991B1B;
+}
+
+/* Liquidación */
+.billing-summary {
+  background-color: rgba(211, 175, 251, 0.15);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  border: 1px solid #D3AFFB;
+}
+
+.billing-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: #444;
+}
+
+.billing-row.total {
+  border-top: 1px solid #D3AFFB;
+  padding-top: 10px;
+  margin-bottom: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #521E89;
+}
+
+/* Botones principales */
+.button-group {
+  display: flex;
+  gap: 15px;
+}
+
+.btn-secondary {
+  flex: 1;
+  height: 48px;
+  background-color: transparent;
+  border: 1px solid #521E89;
+  color: #521E89;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-pay-now {
+  flex: 2;
+  height: 48px;
+  background-color: #521E89;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(82, 30, 137, 0.25);
+  transition: background-color 0.2s;
+}
+
+.btn-pay-now:hover {
+  background-color: #763CB4;
+}
+
+.btn-pay-now:disabled {
+  background-color: #A58AC6;
+  cursor: not-allowed;
+}

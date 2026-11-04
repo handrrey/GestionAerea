@@ -1,0 +1,113 @@
+<div class="mis-reservas-page">
+  <div class="main-card">
+    
+    <!-- Encabezado de la Sección -->
+    <div class="header-section">
+      <h1 class="title">📌 Mis Reservas de Vuelos</h1>
+      <p class="subtitle">Consulta el estado de tus itinerarios apartados, verifica tiempos límites de pago y gestiona cancelaciones.</p>
+    </div>
+
+    <!-- Alertas de Notificación -->
+    <div class="alert-bar alert-success" *ngIf="mensajeExito">
+      ✅ {{ mensajeExito }}
+    </div>
+
+    <div class="alert-bar alert-error" *ngIf="mensajeError">
+      ⚠️ {{ mensajeError }}
+    </div>
+
+    <!-- Estado de Carga -->
+    <div *ngIf="cargando" class="loading-state">
+      🔄 Cargando tus reservas actualizadas...
+    </div>
+
+    <!-- Estado Sin Reservas (Mantiene el mensaje que ya tenías) -->
+    <div *ngIf="!cargando && reservas.length === 0" class="empty-state">
+      <div class="empty-icon">✈️</div>
+      <h3>No tienes reservas activas</h3>
+      <p>Explora nuestros vuelos disponibles o realiza una búsqueda personalizada para apartar tus tiquetes.</p>
+    </div>
+
+    <!-- Listado de Reservas Existentes -->
+    <div class="reservas-grid" *ngIf="!cargando && reservas.length > 0">
+      <div class="reserva-card" *ngFor="let r of reservas">
+        
+        <!-- Encabezado de la Tarjeta (Código, Estado y Aviso de Tiempo Restante) -->
+        <div class="card-top">
+          <div class="code-info">
+            <span class="label">CÓDIGO DE RESERVA</span>
+            <span class="code">{{ r.codigo }}</span>
+          </div>
+
+          <div class="status-box">
+            <span class="status-badge" [ngClass]="r.estado.toLowerCase()">
+              {{ r.estado }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Alerta de Tiempo Restante para la Reserva -->
+        <div class="expiration-alert" *ngIf="r.estado === 'RESERVADO'">
+          <span class="alert-icon">⏳</span>
+          <div class="alert-text">
+            <strong>Tiempo restante para pagar:</strong> {{ calcularTiempoRestante(r.fechaLimite) }}
+            <br>
+            <small>Expira el: {{ r.fechaLimite | date:'dd/MM/yyyy - hh:mm a' }}</small>
+          </div>
+        </div>
+
+        <!-- Cuerpo con la Información Completa del Vuelo -->
+        <div class="card-body">
+          <div class="flight-route-header">
+            <h3>VUELO {{ r.vueloCodigo }}</h3>
+            <span class="duration-badge">⏱️ {{ r.duracion }}</span>
+          </div>
+
+          <div class="route-banner">
+            <div class="city-box">
+              <span class="city-name">{{ r.origen }}</span>
+              <span class="flight-time">📅 {{ r.fechaSalida | date:'dd MMM yyyy' }}</span>
+              <span class="flight-hour">⏰ {{ r.fechaSalida | date:'HH:mm' }} HRS</span>
+            </div>
+
+            <div class="route-arrow">
+              <span>➔</span>
+            </div>
+
+            <div class="city-box text-right">
+              <span class="city-name">{{ r.destino }}</span>
+              <span class="flight-time">📅 {{ r.fechaLlegada | date:'dd MMM yyyy' }}</span>
+              <span class="flight-hour">⏰ {{ r.fechaLlegada | date:'HH:mm' }} HRS</span>
+            </div>
+          </div>
+
+          <!-- Detalles adicionales (Pasajeros) -->
+          <div class="passengers-info">
+            <span>👥 <strong>Pasajeros registrados:</strong> {{ r.cantidadPasajeros }} pasajero(s)</span>
+          </div>
+        </div>
+
+        <!-- Pie de Tarjeta (Monto Total y Botón Cancelar) -->
+        <div class="card-footer">
+          <div class="price-box">
+            <span class="price-label">Monto Total a Pagar</span>
+            <div class="price-amount">${{ r.monto | number }} COP</div>
+          </div>
+
+          <div class="action-box">
+            <button class="btn-cancelar" 
+                    *ngIf="r.estado === 'RESERVADO'" 
+                    (click)="cancelarReserva(r.idReserva)">
+              Cancelar Reserva 🚫
+            </button>
+
+            <span class="resolved-tag" *ngIf="r.estado === 'CANCELADO'">Reserva Anulada</span>
+            <span class="resolved-tag pagado" *ngIf="r.estado === 'PAGADO'">Reserva Pagada ✓</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>

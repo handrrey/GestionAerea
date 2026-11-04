@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef, inject, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router'; // 👈 Inyectamos Router
+import { Router, RouterModule } from '@angular/router';
 import { CompraReservaService } from '../../../nucleo/servicios/compra-reserva';
 import { CompraReserva, PasajeroForm } from '../../../nucleo/modelos/compra-reserva.model';
 
@@ -14,7 +14,7 @@ import { CompraReserva, PasajeroForm } from '../../../nucleo/modelos/compra-rese
 })
 export class CompraReservaComponent implements OnInit {
 
-  private router = inject(Router); // 👈 Inyección de Router
+  private router = inject(Router);
   private compraReservaService = inject(CompraReservaService);
   private cdr = inject(ChangeDetectorRef);
 
@@ -39,7 +39,7 @@ export class CompraReservaComponent implements OnInit {
 
   // Visibilidad de Modales y Pestañas
   mostrarDetalleModal: boolean = false;
-  mostrarCompraReservaPestana: boolean = true; // 🟢 Inicia en true para renderizar la pantalla
+  mostrarCompraReservaPestana: boolean = true;
 
   // Mensajes de la Interfaz
   mensajeError: string = '';
@@ -54,7 +54,6 @@ export class CompraReservaComponent implements OnInit {
   fechaLimitePagoCalculada: Date = new Date();
 
   ngOnInit(): void {
-    // 🟢 1. Capturamos el vuelo pasado desde el buscador/lista de vuelos
     const navData = this.router.getCurrentNavigation()?.extras?.state?.['vuelo'] || history.state?.vuelo;
 
     if (navData) {
@@ -75,7 +74,6 @@ export class CompraReservaComponent implements OnInit {
     this.actualizarFechaLimite();
     this.actualizarCantidadPasajeros();
 
-    // 🟢 2. Forzamos renderizado visual inmediato
     this.mostrarCompraReservaPestana = true;
     this.cdr.detectChanges();
   }
@@ -99,7 +97,6 @@ export class CompraReservaComponent implements OnInit {
     this.fechaLimitePagoCalculada = hoy;
   }
 
-  // Primer paso: Seleccionar / Reservar en la lista
   alTocarSeleccionarReserva(): void {
     this.mensajeError = '';
 
@@ -113,14 +110,12 @@ export class CompraReservaComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  // Transición al Formulario Principal
   irAFormularioCompraReserva(): void {
     this.mostrarDetalleModal = false;
     this.mostrarCompraReservaPestana = true;
     this.cdr.detectChanges();
   }
 
-  // Manejo de la cantidad de pasajeros (1 a 5 máximo)
   actualizarCantidadPasajeros(): void {
     if (this.cantidadPasajeros > 5) this.cantidadPasajeros = 5;
     if (this.cantidadPasajeros < 1) this.cantidadPasajeros = 1;
@@ -142,7 +137,6 @@ export class CompraReservaComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  // Obtener capacidades del avión
   obtenerCapacidadAsientos(): { total: number; economicos: number; primeraClase: number } {
     const esNacional = this.vuelo.tipo === 'NACIONAL';
     return {
@@ -152,13 +146,11 @@ export class CompraReservaComponent implements OnInit {
     };
   }
 
-  // Cálculo del monto total
   calcularMontoTotal(): number {
     const factorClase = this.claseSeleccionada === 'PRIMERA_CLASE' ? 1.4 : 1.0;
     return Math.round(this.vuelo.precioBase * factorClase * this.cantidadPasajeros);
   }
 
-  // Validaciones del formulario de pasajeros y edades
   validarPasajeros(): boolean {
     this.mensajeError = '';
 
@@ -174,7 +166,6 @@ export class CompraReservaComponent implements OnInit {
       }
     }
 
-    // Regla de Edad: Debe haber al menos un adulto mayor de 18 años
     const adultos = this.pasajeros.filter(p => p.edad >= 18);
     if (adultos.length === 0) {
       this.mensajeError = 'Los menores de edad no pueden viajar solos. Debe haber al menos un adulto (mayor de 18 años) acompañante.';
@@ -184,7 +175,35 @@ export class CompraReservaComponent implements OnInit {
     return true;
   }
 
-  // Confirmar la reserva de 24 horas
+  // 🟢 Método para Añadir al Carrito
+  anadirAlCarrito(): void {
+    if (!this.validarPasajeros()) {
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const itemCarrito = {
+      vuelo: this.vuelo,
+      pasajeros: this.pasajeros,
+      clase: this.claseSeleccionada,
+      montoTotal: this.calcularMontoTotal(),
+      fechaAgregado: new Date().toISOString()
+    };
+
+    try {
+      const carritoActual = JSON.parse(localStorage.getItem('app_carrito_vuelos') || '[]');
+      carritoActual.push(itemCarrito);
+      localStorage.setItem('app_carrito_vuelos', JSON.stringify(carritoActual));
+
+      this.mensajeExito = '¡Vuelo añadido al carrito de compras con éxito! 🛒';
+      this.mostrarDetalleModal = false;
+      this.cdr.detectChanges();
+    } catch (e) {
+      this.mensajeError = 'Error al guardar la selección en el carrito.';
+      this.cdr.detectChanges();
+    }
+  }
+
   confirmarReserva24H(): void {
     if (!this.validarPasajeros()) {
       this.cdr.detectChanges();

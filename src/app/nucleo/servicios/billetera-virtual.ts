@@ -31,4 +31,8 @@ export class BilleteraService {
   obtenerHistorial(idUsuario: number): Observable<Transaccion[]> {
     return this.http.get<Transaccion[]>(`${this.apiUrl}/billetera/historial/${idUsuario}`);
   }
+
+  obtenerSaldo(idUsuario: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/usuario/${idUsuario}`);
+  }
 }

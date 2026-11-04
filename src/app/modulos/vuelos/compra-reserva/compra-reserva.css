@@ -279,6 +279,19 @@
   cursor: pointer;
 }
 
+.btn-cart-purple {
+  flex: 1.5;
+  height: 48px;
+  background-color: #D3AFFB;
+  color: #521E89;
+  border: 1px solid #763CB4;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
 .btn-confirm-reserve {
   flex: 2;
   height: 48px;

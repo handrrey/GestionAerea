@@ -25,7 +25,7 @@
       <button class="btn-large btn-reserve" (click)="irAFormularioCompraReserva()">
         📌 Reservar vuelo
       </button>
-      <button class="btn-large btn-cart">
+      <button class="btn-large btn-cart" (click)="anadirAlCarrito()">
         🛒 Añadir al carrito
       </button>
     </div>
@@ -129,9 +129,10 @@
       <div class="price-total">${{ calcularMontoTotal() | number }} COP</div>
     </div>
 
-    <!-- Botones de Acción -->
+    <!-- Botones de Acción (Tres Botones) -->
     <div class="button-group">
       <button type="button" class="btn-secondary" (click)="mostrarCompraReservaPestana = false">CANCELAR</button>
+      <button type="button" class="btn-cart-purple" (click)="anadirAlCarrito()">AÑADIR AL CARRITO 🛒</button>
       <button type="button" class="btn-confirm-reserve" (click)="confirmarReserva24H()">CONFIRMAR RESERVA (24H MÁXIMO) 📌</button>
     </div>
 

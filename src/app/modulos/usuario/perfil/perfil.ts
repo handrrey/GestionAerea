@@ -8,17 +8,26 @@ import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/
 
 import { AutenticacionService } from '../../../nucleo/servicios/autenticacion';
 import { Usuario } from '../../../nucleo/modelos/usuario.model';
+import { MisReservasComponent } from '../mis-reservas/mis-reservas';
 
 @Component({
   selector: 'app-perfil',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    RouterModule, 
+    MisReservasComponent
+  ],
   templateUrl: './perfil.html',
   styleUrls: ['./perfil.css']
 })
 export class PerfilComponent implements OnInit {
   // 1. Modelos de datos
   usuarioActual: Usuario | null = null;
+
+  // Control de despliegue de secciones ('ninguna' | 'reservas' | 'perfil')
+  seccionActiva: 'ninguna' | 'reservas' | 'perfil' = 'ninguna';
 
   // 2. Estado de los campos editables
   emailEdit: string = '';
@@ -52,6 +61,19 @@ export class PerfilComponent implements OnInit {
     this.cargarDatosUsuario();
     this.configurarLimitesFecha();
     this.configurarBuscadorUbicaciones();
+  }
+
+  // --- CONTROL DE BANNERS DESPLEGABLES ---
+
+  toggleSeccion(seccion: 'reservas' | 'perfil'): void {
+    if (this.seccionActiva === seccion) {
+      this.seccionActiva = 'ninguna';
+    } else {
+      this.seccionActiva = seccion;
+    }
+    this.mensajeError = '';
+    this.mensajeExito = '';
+    this.cdr.detectChanges();
   }
 
   // --- CONFIGURACIONES INICIALES ---
@@ -100,7 +122,6 @@ export class PerfilComponent implements OnInit {
 
     this.authService.obtenerPerfilUsuario(this.usuarioActual.id_usuario).subscribe({
       next: (usuarioMapeado) => {
-        // Punto 1: Asignamos valores por defecto para evitar que se pinte la palabra "undefined"
         this.usuarioActual = {
           ...usuarioMapeado,
           cc: usuarioMapeado.cc || 0,
@@ -114,8 +135,7 @@ export class PerfilComponent implements OnInit {
         
         this.direccionEdit = usuarioMapeado.direccionFacturacion || '';
         this.imagenPreview = usuarioMapeado.imagenUrl || null;
-        
-        // Asignamos el lugar actual como validado para que no salte error si no lo editan
+        this.emailEdit = usuarioMapeado.email || '';
         this.lugarValidado = this.usuarioActual.lugarNacimiento || '';
 
         this.cdr.detectChanges();
@@ -171,7 +191,6 @@ export class PerfilComponent implements OnInit {
 
     if (!this.usuarioActual) return;
 
-    // 1. Validación estricta de Nombres
     const nombresLimpios = (this.usuarioActual.nombres || '').trim();
     if (nombresLimpios === '') {
       this.mensajeError = 'El campo Nombres no puede estar vacío.';
@@ -179,7 +198,6 @@ export class PerfilComponent implements OnInit {
       return;
     }
 
-    // 2. Validación estricta de Apellidos
     const apellidosLimpios = (this.usuarioActual.apellidos || '').trim();
     if (apellidosLimpios === '') {
       this.mensajeError = 'El campo Apellidos no puede estar vacío.';
@@ -187,7 +205,6 @@ export class PerfilComponent implements OnInit {
       return;
     }
 
-    // 3. Validación estricta de Usuario
     const usuarioLimpio = (this.usuarioActual.usuario || '').trim();
     if (usuarioLimpio === '') {
       this.mensajeError = 'El nombre de usuario no puede estar vacío.';
@@ -200,7 +217,6 @@ export class PerfilComponent implements OnInit {
       return;
     }
 
-    // 4. Validación estricta de Dirección
     const direccionLimpiada = (this.direccionEdit || '').trim();
     if (direccionLimpiada === '') {
       this.mensajeError = 'La dirección de facturación no puede estar vacía.';
@@ -208,11 +224,9 @@ export class PerfilComponent implements OnInit {
       return;
     }
 
-    // 5. Validaciones heredadas de fecha y lugar
     if (!this.validarFechaNacimiento()) return;
     if (!this.validarLugarNacimiento()) return;
 
-    // Construcción del payload con datos limpios
     const payloadBackend: Partial<Usuario> = {
       nombres: nombresLimpios,
       apellidos: apellidosLimpios,
@@ -224,11 +238,9 @@ export class PerfilComponent implements OnInit {
       imagenUrl: this.imagenPreview || undefined
     };
 
-    // 6. Validación estricta de Contraseñas (Detecta si escribieron espacios en blanco)
     const passRawNueva = this.passwordNueva || '';
     const passRawConf = this.confirmarPassword || '';
 
-    // Si el usuario escribió algo en los inputs pero dejó espacios vacíos o incompletos
     if (passRawNueva.length > 0 || passRawConf.length > 0) {
       const passNuevaLimpia = passRawNueva.trim();
       const passConfLimpia = passRawConf.trim();
@@ -259,7 +271,6 @@ export class PerfilComponent implements OnInit {
       payloadBackend.password = passNuevaLimpia;
     }
 
-    // 7. Petición HTTP al backend
     this.authService.actualizarPerfil(payloadBackend).subscribe({
       next: () => {
         this.passwordNueva = '';
@@ -301,7 +312,7 @@ export class PerfilComponent implements OnInit {
     this.confirmarPassword = '';
     this.mensajeError = '';
     this.mensajeExito = '';
-    this.router.navigate(['/home']);
+    this.seccionActiva = 'ninguna';
   }
 
   // --- FUNCIONES AUXILIARES DE VALIDACIÓN ---

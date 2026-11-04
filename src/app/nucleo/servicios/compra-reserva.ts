@@ -26,4 +26,14 @@ export class CompraReservaService {
   obtenerHistorialPorUsuario(idUsuario: number): Observable<CompraReserva[]> {
     return this.http.get<CompraReserva[]>(`${this.apiUrl}/usuario/${idUsuario}`);
   }
+
+  // Obtener historial de reservas de un usuario por su ID
+  obtenerReservasPorUsuario(idUsuario: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/usuario/${idUsuario}`);
+  }
+
+  // Cancelar reserva (usando PATCH o DELETE según tu backend)
+  cancelarReserva(idReserva: number): Observable<any> {
+    return this.http.patch<any>(`${this.apiUrl}/${idReserva}/cancelar`, {});
+  }
 }

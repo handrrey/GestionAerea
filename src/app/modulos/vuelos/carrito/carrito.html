@@ -1,0 +1,104 @@
+<div class="carrito-page">
+  <div class="container">
+    <div class="main-card">
+      
+      <div class="header-text">
+        <h1 class="title">Compra Directa de Tiquetes</h1>
+        <p class="subtitle">Confirma la transacción para emisión inmediata de pasabordos</p>
+      </div>
+
+      <!-- Alertas de Estado -->
+      <div class="alert-bar alert-success" *ngIf="mensajeExito">
+        ✅ {{ mensajeExito }}
+      </div>
+      <div class="alert-bar alert-error" *ngIf="mensajeError">
+        ⚠️ {{ mensajeError }}
+      </div>
+
+      <!-- ESTADO SIN ELEMENTOS EN EL CARRITO -->
+      <div class="empty-cart-state" *ngIf="itemsCarrito.length === 0">
+        <div class="empty-icon">🛒</div>
+        <h3>Tu carrito de compras está vacío</h3>
+        <p>Selecciona un vuelo desde nuestro buscador o catálogo para iniciar la compra.</p>
+        <button class="btn-explore" routerLink="/home">Explorar Vuelos Disponibles ✈️</button>
+      </div>
+
+      <!-- ESTADO CON ITINERARIO PARA PAGAR -->
+      <div *ngIf="itemsCarrito.length > 0">
+        
+        <!-- Listado de Vuelos en el Carrito -->
+        <div class="flight-summary-box" *ngFor="let item of itemsCarrito; let index = index">
+          <div class="summary-details">
+            <span class="summary-title">Vuelo {{ item.vuelo?.codigo }} ({{ item.vuelo?.tipo || 'Nacional' }})</span>
+            <div class="summary-route">
+              {{ item.vuelo?.origen }} ➔ {{ item.vuelo?.destino }} | {{ item.vuelo?.fechaSalida | date:'dd MMM yyyy - HH:mm' }} HRS
+            </div>
+            <div class="summary-passengers">
+              👥 {{ item.pasajeros?.length || 1 }} Pasajero(s) | Clase: <strong>{{ item.clase || 'ECONOMICA' }}</strong>
+            </div>
+          </div>
+          
+          <div class="summary-right">
+            <div class="item-price">${{ item.montoTotal | number }} COP</div>
+            <button class="btn-remove-item" (click)="eliminarDelCarrito(index)" title="Quitar del carrito">🗑️</button>
+          </div>
+        </div>
+
+        <!-- Selección del Medio de Pago -->
+        <div class="section-title">💳 Selecciona el Medio de Pago</div>
+
+        <div class="payment-methods">
+          <!-- Opción 1: Billetera Financiera -->
+          <label class="payment-option" [class.active]="metodoPagoSeleccionado === 'billetera'" (click)="metodoPagoSeleccionado = 'billetera'">
+            <div class="option-info">
+              <input type="radio" name="payment_method" value="billetera" [checked]="metodoPagoSeleccionado === 'billetera'">
+              <div>
+                <strong class="option-name">Billetera Financiera del Sistema</strong>
+                <p class="option-sub">Saldo disponible: ${{ saldoBilletera | number }} COP</p>
+              </div>
+            </div>
+            <span class="balance-status" *ngIf="saldoBilletera >= obtenerMontoTotalCarrito()">✓ Saldo Suficiente</span>
+            <span class="balance-status insufficient" *ngIf="saldoBilletera < obtenerMontoTotalCarrito()">⚠️ Saldo Insuficiente</span>
+          </label>
+
+          <!-- Opción 2: Tarjeta de Crédito Registrada -->
+          <label class="payment-option" [class.active]="metodoPagoSeleccionado === 'tarjeta'" (click)="metodoPagoSeleccionado = 'tarjeta'">
+            <div class="option-info">
+              <input type="radio" name="payment_method" value="tarjeta" [checked]="metodoPagoSeleccionado === 'tarjeta'">
+              <div>
+                <strong class="option-name">Tarjeta Crédito Visa (**** 4321)</strong>
+                <p class="option-sub">Registrada en tu perfil de usuario</p>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <!-- Desglose de Liquidación -->
+        <div class="billing-summary">
+          <div class="billing-row" *ngFor="let item of itemsCarrito">
+            <span>Tiquetes Vuelo {{ item.vuelo?.codigo }} ({{ item.pasajeros?.length || 1 }} pax)</span>
+            <span>${{ item.montoTotal | number }} COP</span>
+          </div>
+          <div class="billing-row">
+            <span>Tasas e Impuestos Aeroportuarios</span>
+            <span>Incluidos</span>
+          </div>
+          <div class="billing-row total">
+            <span>Total Debitados:</span>
+            <span>${{ obtenerMontoTotalCarrito() | number }} COP</span>
+          </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="button-group">
+          <button type="button" class="btn-secondary" (click)="vaciarCarrito()">VACIAR CARRITO</button>
+          <button type="button" class="btn-pay-now" (click)="procesarPagoDirecto()" [disabled]="procesando">
+            {{ procesando ? 'PROCESANDO TRANSACCIÓN...' : 'PAGAR Y CONFIRMAR COMPRA 💳' }}
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
