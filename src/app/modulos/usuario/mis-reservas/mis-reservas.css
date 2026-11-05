@@ -2,7 +2,6 @@
   display: block;
   min-height: 100vh;
   width: 100%;
-  /* Gradient morado global exactamente igual a la aplicación */
   background: linear-gradient(135deg, #521E89 0%, #763CB4 50%, #FAFAFA 100%);
   padding: 40px 0;
   box-sizing: border-box;
@@ -151,7 +150,8 @@
   text-transform: uppercase;
 }
 
-.status-badge.reservado {
+.status-badge.reservado,
+.status-badge.pendiente {
   background-color: #FEF9E7;
   color: #7D6608;
   border: 1px solid #F1C40F;
@@ -290,11 +290,12 @@
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.1s;
 }
 
 .btn-cancelar:hover {
   background-color: #FEE2E2;
+  transform: translateY(-1px);
 }
 
 .resolved-tag {

@@ -54,10 +54,10 @@ export class MisReservasComponent implements OnInit {
           const vueloObj = r.vuelo || {};
           
           return {
-            idReserva: Number(r.id_reserva || r.idReserva || 0),
+            idReserva: Number(r.id_reserva || r.idReserva || r.id || 0),
             codigo: r.codigo_reserva || r.codigoReserva || 'RSV-000',
             monto: Number(r.monto_total || r.montoTotal || 0),
-            estado: (r.estado || 'RESERVADO').toUpperCase(),
+            estado: String(r.estado || 'PENDIENTE').toUpperCase(),
             fechaReserva: r.fecha_reserva || r.fechaReserva,
             fechaLimite: r.fecha_limite_pago || r.fechaLimitePago,
             cantidadPasajeros: r.cantidad_pasajeros || r.cantidadPasajeros || 1,
@@ -82,9 +82,8 @@ export class MisReservasComponent implements OnInit {
     });
   }
 
-  // Método auxiliar para calcular el tiempo restante hasta la expiración
   calcularTiempoRestante(fechaLimiteStr: string): string {
-    if (!fechaLimiteStr) return 'Tiempo no disponible';
+    if (!fechaLimiteStr) return '24 horas disponibles';
 
     const ahora = new Date().getTime();
     const limite = new Date(fechaLimiteStr).getTime();

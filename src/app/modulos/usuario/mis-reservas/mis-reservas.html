@@ -21,7 +21,7 @@
       🔄 Cargando tus reservas actualizadas...
     </div>
 
-    <!-- Estado Sin Reservas (Mantiene el mensaje que ya tenías) -->
+    <!-- Estado Sin Reservas -->
     <div *ngIf="!cargando && reservas.length === 0" class="empty-state">
       <div class="empty-icon">✈️</div>
       <h3>No tienes reservas activas</h3>
@@ -32,7 +32,7 @@
     <div class="reservas-grid" *ngIf="!cargando && reservas.length > 0">
       <div class="reserva-card" *ngFor="let r of reservas">
         
-        <!-- Encabezado de la Tarjeta (Código, Estado y Aviso de Tiempo Restante) -->
+        <!-- Encabezado de la Tarjeta (Código y Estado) -->
         <div class="card-top">
           <div class="code-info">
             <span class="label">CÓDIGO DE RESERVA</span>
@@ -46,13 +46,13 @@
           </div>
         </div>
 
-        <!-- Alerta de Tiempo Restante para la Reserva -->
-        <div class="expiration-alert" *ngIf="r.estado === 'RESERVADO'">
+        <!-- Alerta de Tiempo Restante (Se activa si está RESERVADO o PENDIENTE) -->
+        <div class="expiration-alert" *ngIf="r.estado === 'RESERVADO' || r.estado === 'PENDIENTE'">
           <span class="alert-icon">⏳</span>
           <div class="alert-text">
             <strong>Tiempo restante para pagar:</strong> {{ calcularTiempoRestante(r.fechaLimite) }}
             <br>
-            <small>Expira el: {{ r.fechaLimite | date:'dd/MM/yyyy - hh:mm a' }}</small>
+            <small *ngIf="r.fechaLimite">Expira el: {{ r.fechaLimite | date:'dd/MM/yyyy - hh:mm a' }}</small>
           </div>
         </div>
 
@@ -81,7 +81,7 @@
             </div>
           </div>
 
-          <!-- Detalles adicionales (Pasajeros) -->
+          <!-- Detalles de Pasajeros -->
           <div class="passengers-info">
             <span>👥 <strong>Pasajeros registrados:</strong> {{ r.cantidadPasajeros }} pasajero(s)</span>
           </div>
@@ -95,8 +95,9 @@
           </div>
 
           <div class="action-box">
+            <!-- Botón habilitado para reservas en estado RESERVADO o PENDIENTE -->
             <button class="btn-cancelar" 
-                    *ngIf="r.estado === 'RESERVADO'" 
+                    *ngIf="r.estado === 'RESERVADO' || r.estado === 'PENDIENTE'" 
                     (click)="cancelarReserva(r.idReserva)">
               Cancelar Reserva 🚫
             </button>
