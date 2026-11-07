@@ -49,9 +49,9 @@
 
         <div class="payment-methods">
           <!-- Opción 1: Billetera Financiera -->
-          <label class="payment-option" [class.active]="metodoPagoSeleccionado === 'billetera'" (click)="metodoPagoSeleccionado = 'billetera'">
+          <label class="payment-option" [class.active]="metodoPagoSeleccionado === 'Billetera'" (click)="metodoPagoSeleccionado = 'Billetera'">
             <div class="option-info">
-              <input type="radio" name="payment_method" value="billetera" [checked]="metodoPagoSeleccionado === 'billetera'">
+              <input type="radio" name="payment_method" value="Billetera" [checked]="metodoPagoSeleccionado === 'Billetera'">
               <div>
                 <strong class="option-name">Billetera Financiera del Sistema</strong>
                 <p class="option-sub">Saldo disponible: ${{ saldoBilletera | number }} COP</p>
@@ -62,9 +62,9 @@
           </label>
 
           <!-- Opción 2: Tarjeta de Crédito Registrada -->
-          <label class="payment-option" [class.active]="metodoPagoSeleccionado === 'tarjeta'" (click)="metodoPagoSeleccionado = 'tarjeta'">
+          <label class="payment-option" [class.active]="metodoPagoSeleccionado === 'Tarjeta'" (click)="metodoPagoSeleccionado = 'Tarjeta'">
             <div class="option-info">
-              <input type="radio" name="payment_method" value="tarjeta" [checked]="metodoPagoSeleccionado === 'tarjeta'">
+              <input type="radio" name="payment_method" value="Tarjeta" [checked]="metodoPagoSeleccionado === 'Tarjeta'">
               <div>
                 <strong class="option-name">Tarjeta Crédito Visa (**** 4321)</strong>
                 <p class="option-sub">Registrada en tu perfil de usuario</p>
