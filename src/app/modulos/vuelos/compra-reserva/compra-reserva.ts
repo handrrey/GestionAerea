@@ -305,7 +305,7 @@ export class CompraReservaComponent implements OnInit {
       codigoReserva: codigoGenerado,
       idUsuario: Number(this.idUsuario),
       montoTotal: this.calcularMontoTotal(),
-      estado: 'RESERVADO',
+      estado: 'Pendiente',
       metodoPago: 'Billetera',
       fechaReserva: new Date().toISOString(),
       fechaLimitePago: this.fechaLimitePagoCalculada.toISOString(),
