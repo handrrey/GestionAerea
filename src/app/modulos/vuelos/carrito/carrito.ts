@@ -22,7 +22,7 @@ export class CarritoComponent implements OnInit {
   idUsuario: number = 0;
   saldoBilletera: number = 0;
   itemsCarrito: any[] = [];
-  metodoPagoSeleccionado: 'billetera' | 'tarjeta' = 'billetera';
+  metodoPagoSeleccionado: 'Billetera' | 'Tarjeta' = 'Billetera';
 
   mensajeError: string = '';
   mensajeExito: string = '';
@@ -98,7 +98,7 @@ export class CarritoComponent implements OnInit {
 
     const totalPagar = this.obtenerMontoTotalCarrito();
 
-    if (this.metodoPagoSeleccionado === 'billetera' && this.saldoBilletera < totalPagar) {
+    if (this.metodoPagoSeleccionado === 'Billetera' && this.saldoBilletera < totalPagar) {
       this.mensajeError = 'Saldo insuficiente en tu billetera virtual para completar la transacción.';
       this.cdr.detectChanges();
       return;
@@ -112,20 +112,13 @@ export class CarritoComponent implements OnInit {
     // 🟢 Payload en formato flexible compatible con TypeScript y NestJS
     const payload: any = {
       codigoReserva: codigoCompra,
-      codigo_reserva: codigoCompra,
       idUsuario: Number(this.idUsuario),
-      id_usuario: Number(this.idUsuario),
       montoTotal: Number(totalPagar),
-      monto_total: Number(totalPagar),
-      estado: 'PAGADO',
-      metodoPago: this.metodoPagoSeleccionado.toUpperCase(),
-      metodo_pago: this.metodoPagoSeleccionado.toUpperCase(),
+      estado: 'Pagado',
+      metodoPago: this.metodoPagoSeleccionado,
       fechaReserva: new Date().toISOString(),
-      fecha_reserva: new Date().toISOString(),
       fechaPago: new Date().toISOString(),
-      fecha_pago: new Date().toISOString(),
-      idVuelo: Number(itemActual.vuelo?.idVuelo || itemActual.vuelo?.id || 101),
-      id_vuelo: Number(itemActual.vuelo?.idVuelo || itemActual.vuelo?.id || 101)
+      idVuelo: Number(itemActual.vuelo?.idVuelo || itemActual.vuelo?.id || 101)
     };
 
     this.reservaService.crearReserva(payload).subscribe({
