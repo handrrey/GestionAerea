@@ -20,7 +20,6 @@ export class CompraReservaComponent implements OnInit {
 
   Math = Math;
 
-  // Vuelo seleccionado (Con fallback por defecto)
   @Input() vuelo: any = {
     idVuelo: 101,
     codigo: 'AV-101',
@@ -33,25 +32,23 @@ export class CompraReservaComponent implements OnInit {
     precioBase: 3500000
   };
 
-  // Datos de Sesión
   idUsuario: number = 0;
   rolUsuario: string = 'VISITANTE';
 
-  // Visibilidad de Modales y Pestañas
   mostrarDetalleModal: boolean = false;
   mostrarCompraReservaPestana: boolean = true;
 
-  // Mensajes de la Interfaz
   mensajeError: string = '';
   mensajeExito: string = '';
 
-  // Parámetros de la Operación
   cantidadPasajeros: number = 1;
   claseSeleccionada: 'ECONOMICA' | 'PRIMERA_CLASE' = 'ECONOMICA';
   pasajeros: PasajeroForm[] = [];
 
-  // Expiración calculada para la reserva
+  // 🟢 Propiedades declaradas para enlazar con [min] y [max] en el HTML
   fechaLimitePagoCalculada: Date = new Date();
+  fechaMinimaNacimiento: string = '';
+  fechaMaximaNacimiento: string = '';
 
   ngOnInit(): void {
     const navData = this.router.getCurrentNavigation()?.extras?.state?.['vuelo'] || history.state?.vuelo;
@@ -72,6 +69,7 @@ export class CompraReservaComponent implements OnInit {
 
     this.obtenerSesionUsuario();
     this.actualizarFechaLimite();
+    this.configurarLimitesFechasNacimiento();
     this.actualizarCantidadPasajeros();
 
     this.mostrarCompraReservaPestana = true;
@@ -95,6 +93,13 @@ export class CompraReservaComponent implements OnInit {
     const hoy = new Date();
     hoy.setHours(hoy.getHours() + 24);
     this.fechaLimitePagoCalculada = hoy;
+  }
+
+  private configurarLimitesFechasNacimiento(): void {
+    const hoy = new Date();
+    const min = new Date(hoy.getFullYear() - 100, hoy.getMonth(), hoy.getDate());
+    this.fechaMaximaNacimiento = hoy.toISOString().split('T')[0];
+    this.fechaMinimaNacimiento = min.toISOString().split('T')[0];
   }
 
   alTocarSeleccionarReserva(): void {
@@ -124,8 +129,12 @@ export class CompraReservaComponent implements OnInit {
       this.pasajeros.push({
         nombreCompleto: '',
         documento: '',
-        email: '',
+        fechaNacimiento: '',
+        genero: '',
         telefono: '',
+        email: '',
+        nombreContacto: '',
+        telefonoContacto: '',
         edad: 18
       });
     }
@@ -153,29 +162,96 @@ export class CompraReservaComponent implements OnInit {
 
   validarPasajeros(): boolean {
     this.mensajeError = '';
+    const regexDocumento = /^\d{8,10}$/;
+    const regexTelefono = /^\d{10}$/;
+    const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    let totalAdultos = 0;
 
     for (let i = 0; i < this.pasajeros.length; i++) {
       const p = this.pasajeros[i];
-      if (!p.nombreCompleto.trim() || !p.documento.trim() || !p.email.trim() || !p.telefono.trim()) {
-        this.mensajeError = `Por favor completa todos los datos del Pasajero ${i + 1}.`;
+      const numPasajero = i + 1;
+
+      if (!p.nombreCompleto || p.nombreCompleto.trim() === '') {
+        this.mensajeError = `El nombre completo del Pasajero ${numPasajero} no puede estar vacío.`;
         return false;
       }
-      if (p.edad < 0 || isNaN(p.edad)) {
-        this.mensajeError = `Ingresa una edad válida para el Pasajero ${i + 1}.`;
+      if (!p.documento || p.documento.trim() === '') {
+        this.mensajeError = `El documento del Pasajero ${numPasajero} no puede estar vacío.`;
+        return false;
+      }
+      if (!regexDocumento.test(p.documento.trim())) {
+        this.mensajeError = `Documento inválido en el Pasajero ${numPasajero}. Debe tener obligatoriamente entre 8 y 10 dígitos.`;
+        return false;
+      }
+      if (!p.fechaNacimiento || p.fechaNacimiento.trim() === '') {
+        this.mensajeError = `La fecha de nacimiento del Pasajero ${numPasajero} es requerida.`;
+        return false;
+      }
+
+      const edadCalculada = this.calcularEdad(p.fechaNacimiento);
+      if (edadCalculada < 0 || edadCalculada > 100 || isNaN(edadCalculada)) {
+        this.mensajeError = `Fecha de nacimiento inválida para el Pasajero ${numPasajero}. No puede ser mayor de 100 años.`;
+        return false;
+      }
+
+      p.edad = edadCalculada;
+      if (edadCalculada >= 18) totalAdultos++;
+
+      if (!p.genero || p.genero.trim() === '') {
+        this.mensajeError = `Selecciona el género del Pasajero ${numPasajero}.`;
+        return false;
+      }
+      if (!p.telefono || p.telefono.trim() === '') {
+        this.mensajeError = `El teléfono del Pasajero ${numPasajero} no puede estar vacío.`;
+        return false;
+      }
+      if (!regexTelefono.test(p.telefono.trim())) {
+        this.mensajeError = `El teléfono del Pasajero ${numPasajero} es inválido. Debe tener obligatoriamente 10 dígitos.`;
+        return false;
+      }
+      if (!p.email || p.email.trim() === '') {
+        this.mensajeError = `El correo electrónico del Pasajero ${numPasajero} no puede estar vacío.`;
+        return false;
+      }
+      if (!regexEmail.test(p.email.trim())) {
+        this.mensajeError = `El correo electrónico del Pasajero ${numPasajero} es inválido.`;
+        return false;
+      }
+      if (!p.nombreContacto || p.nombreContacto.trim() === '') {
+        this.mensajeError = `El nombre de contacto del Pasajero ${numPasajero} no puede estar vacío.`;
+        return false;
+      }
+      if (!p.telefonoContacto || p.telefonoContacto.trim() === '') {
+        this.mensajeError = `El teléfono de contacto del Pasajero ${numPasajero} no puede estar vacío.`;
+        return false;
+      }
+      if (!regexTelefono.test(p.telefonoContacto.trim())) {
+        this.mensajeError = `El teléfono de contacto del Pasajero ${numPasajero} es inválido. Debe tener obligatoriamente 10 dígitos.`;
         return false;
       }
     }
 
-    const adultos = this.pasajeros.filter(p => p.edad >= 18);
-    if (adultos.length === 0) {
-      this.mensajeError = 'Los menores de edad no pueden viajar solos. Debe haber al menos un adulto (mayor de 18 años) acompañante.';
+    if (totalAdultos === 0) {
+      this.mensajeError = '⚠️ Un menor de edad no puede viajar solo. Debe haber al menos un pasajero adulto (mayor de 18 años) en el grupo.';
       return false;
     }
 
     return true;
   }
 
-  // 🟢 Método para Añadir al Carrito
+  private calcularEdad(fechaNacimientoStr: string): number {
+    const fechaNac = new Date(fechaNacimientoStr);
+    const hoy = new Date();
+    if (isNaN(fechaNac.getTime())) return -1;
+    let edad = hoy.getFullYear() - fechaNac.getFullYear();
+    const mes = hoy.getMonth() - fechaNac.getMonth();
+    if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) {
+      edad--;
+    }
+    return edad;
+  }
+
   anadirAlCarrito(): void {
     if (!this.validarPasajeros()) {
       this.cdr.detectChanges();
@@ -212,15 +288,31 @@ export class CompraReservaComponent implements OnInit {
 
     const codigoGenerado = 'RSV-' + Math.random().toString(36).substring(2, 7).toUpperCase();
 
+    // 🟢 Mapeo corregido con las llaves exactas 'nombreContacto' y 'telefonoContacto'
+    const pasajerosLimpios: PasajeroForm[] = this.pasajeros.map(p => ({
+      nombreCompleto: p.nombreCompleto.trim(),
+      documento: p.documento.trim(),
+      fechaNacimiento: p.fechaNacimiento.trim(),
+      genero: p.genero.trim(),
+      telefono: p.telefono.trim(),
+      email: p.email.trim(),
+      nombreContacto: p.nombreContacto.trim(),
+      telefonoContacto: p.telefonoContacto.trim(),
+      edad: p.edad
+    }));
+
     const payload: CompraReserva = {
       codigoReserva: codigoGenerado,
-      idUsuario: this.idUsuario,
+      idUsuario: Number(this.idUsuario),
       montoTotal: this.calcularMontoTotal(),
-      estado: 'Pendiente',
+      estado: 'RESERVADO',
       metodoPago: 'Billetera',
       fechaReserva: new Date().toISOString(),
       fechaLimitePago: this.fechaLimitePagoCalculada.toISOString(),
-      idVuelo: Number(this.vuelo.idVuelo)
+      idVuelo: Number(this.vuelo.idVuelo || this.vuelo.id || 101),
+      clase: this.claseSeleccionada,
+      cantidadPasajeros: this.cantidadPasajeros,
+      pasajeros: pasajerosLimpios
     };
 
     this.compraReservaService.crearReserva(payload).subscribe({

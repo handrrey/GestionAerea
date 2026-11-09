@@ -195,7 +195,7 @@ export class BuscarVuelosParametrizadosComponent implements OnInit {
       }
 
       // Redirección pasando los datos estructurados del vuelo
-      this.router.navigate(['/usuario/compra-reserva'], {
+      this.router.navigate(['/compra-reserva'], {
         state: { vuelo }
       });
 

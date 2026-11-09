@@ -309,3 +309,40 @@
 .btn-confirm-reserve:hover {
   background-color: #763CB4;
 }
+
+.form-group select {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid #D3AFFB;
+  border-radius: 10px;
+  background-color: #FFFFFF;
+  color: #521E89;
+  font-size: 14px;
+  font-weight: 600;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  /* Personalización de la flecha select en navegadores */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%23763CB4' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 18px;
+}
+
+/* Estado al enfocar (Focus) */
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #763CB4;
+  box-shadow: 0 0 0 3px rgba(118, 60, 180, 0.15);
+}
+
+/* Estilo para las opciones dentro de la caja de selección */
+.form-group select option {
+  background-color: #FFFFFF;
+  color: #521E89;
+  padding: 10px;
+}

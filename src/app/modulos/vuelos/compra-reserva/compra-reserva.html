@@ -89,13 +89,13 @@
     <!-- Formularios Dinámicos para Pasajeros -->
     <div *ngFor="let p of pasajeros; let i = index" class="pasajero-block">
       <div class="section-title">
-        <span>👤 Datos del Pasajero {{ i + 1 }} {{ i === 0 ? '(Titular)' : '' }}</span>
+        <span>👤 Datos del Pasajero {{ i + 1 }} {{ i === 0 ? '(Titular de la Reserva)' : '' }}</span>
       </div>
 
       <div class="form-grid">
-        <div class="form-group">
-          <label>Nombres y Apellidos</label>
-          <input type="text" [(ngModel)]="p.nombreCompleto" placeholder="Ej: Juan Pérez" required>
+        <div class="form-group full-width">
+          <label>Nombres y Apellidos Completos</label>
+          <input type="text" [(ngModel)]="p.nombreCompleto" placeholder="Ej: Juan Antonio Pérez Gómez" required>
         </div>
 
         <div class="form-group">
@@ -104,8 +104,22 @@
         </div>
 
         <div class="form-group">
-          <label>Correo Electrónico</label>
-          <input type="email" [(ngModel)]="p.email" placeholder="correo@ejemplo.com" required>
+          <label>Fecha de Nacimiento</label>
+          <input type="date" 
+                 [(ngModel)]="p.fechaNacimiento" 
+                 [min]="fechaMinimaNacimiento" 
+                 [max]="fechaMaximaNacimiento" 
+                 required>
+        </div>
+
+        <div class="form-group">
+          <label>Género</label>
+          <select [(ngModel)]="p.genero" required>
+            <option value="" disabled selected>Seleccione género</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Femenino">Femenino</option>
+            <option value="Otro">Otro</option>
+          </select>
         </div>
 
         <div class="form-group">
@@ -113,9 +127,20 @@
           <input type="tel" [(ngModel)]="p.telefono" placeholder="3001234567" required>
         </div>
 
+        <div class="form-group full-width">
+          <label>Correo Electrónico</label>
+          <input type="email" [(ngModel)]="p.email" placeholder="correo@ejemplo.com" required>
+        </div>
+
+        <!-- Datos de Contacto General / Emergencia -->
         <div class="form-group">
-          <label>Edad del Pasajero</label>
-          <input type="number" [(ngModel)]="p.edad" min="0" max="120" required>
+          <label>Nombre Contacto</label>
+          <input type="text" [(ngModel)]="p.nombreContacto" placeholder="Ej: María Gómez" required>
+        </div>
+
+        <div class="form-group">
+          <label>Teléfono Contacto</label>
+          <input type="tel" [(ngModel)]="p.telefonoContacto" placeholder="3119876543" required>
         </div>
       </div>
     </div>
@@ -129,7 +154,7 @@
       <div class="price-total">${{ calcularMontoTotal() | number }} COP</div>
     </div>
 
-    <!-- Botones de Acción (Tres Botones) -->
+    <!-- Botones de Acción -->
     <div class="button-group">
       <button type="button" class="btn-secondary" (click)="mostrarCompraReservaPestana = false">CANCELAR</button>
       <button type="button" class="btn-cart-purple" (click)="anadirAlCarrito()">AÑADIR AL CARRITO 🛒</button>
