@@ -55,15 +55,16 @@ export class CompraReservaComponent implements OnInit {
 
     if (navData) {
       this.vuelo = {
-        idVuelo: navData.id || navData.idVuelo || navData.id_vuelo || 101,
-        codigo: navData.codigo || navData.codigoVuelo || navData.codigo_vuelo || 'GA-000',
-        tipo: navData.tipo || (navData.destino?.toLowerCase().includes('mad') || navData.destino?.toLowerCase().includes('mia') ? 'INTERNACIONAL' : 'NACIONAL'),
+        // 🟢 Asegura tomar el id real del vuelo (id, idVuelo o id_vuelo)
+        idVuelo: Number(navData.id || navData.idVuelo || navData.id_vuelo || 1),
+        codigo: navData.codigo || navData.codigoVuelo || navData.codigo_vuelo || 'AV-800',
+        tipo: navData.tipo || (navData.destino?.toLowerCase().includes('mad') ? 'INTERNACIONAL' : 'NACIONAL'),
         origen: navData.origen || 'Origen no especificado',
         destino: navData.destino || 'Destino no especificado',
         duracion: navData.duracionVuelo || navData.duracion || '02h 30m',
         fechaSalida: navData.fecha ? `${navData.fecha}T${navData.horaVuelo || '08:00:00'}` : new Date().toISOString(),
         fechaLlegada: navData.fecha ? `${navData.fecha}T${navData.horaVuelo || '12:00:00'}` : new Date().toISOString(),
-        precioBase: Number(navData.precioEconomico || navData.precioBase || navData.costoEconomico || 350000)
+        precioBase: Number(navData.precioEconomico || navData.precioBase || navData.costoEconomico || 200)
       };
     }
 
@@ -288,9 +289,9 @@ export class CompraReservaComponent implements OnInit {
 
     const codigoGenerado = 'RSV-' + Math.random().toString(36).substring(2, 7).toUpperCase();
 
-    // 🟢 Mapeo corregido con las llaves exactas 'nombreContacto' y 'telefonoContacto'
-    const pasajerosLimpios: PasajeroForm[] = this.pasajeros.map(p => ({
-      nombreCompleto: p.nombreCompleto.trim(),
+    // 🟢 Mapeo exacto sin 'nombres' ni 'apellidos' extra
+    const pasajerosLimpios = this.pasajeros.map(p => ({
+      nombreCompleto: p.nombreCompleto.trim(), // Contiene "juan ocampo" tal cual
       documento: p.documento.trim(),
       fechaNacimiento: p.fechaNacimiento.trim(),
       genero: p.genero.trim(),
@@ -298,30 +299,27 @@ export class CompraReservaComponent implements OnInit {
       email: p.email.trim(),
       nombreContacto: p.nombreContacto.trim(),
       telefonoContacto: p.telefonoContacto.trim(),
-      edad: p.edad
+      edad: Number(p.edad || 18)
     }));
 
     const payload: CompraReserva = {
       codigoReserva: codigoGenerado,
       idUsuario: Number(this.idUsuario),
-      montoTotal: this.calcularMontoTotal(),
+      idVuelo: Number(this.vuelo.idVuelo || this.vuelo.id || 1),
+      montoTotal: Number(this.calcularMontoTotal()),
+      cantidadPasajeros: Number(this.cantidadPasajeros),
+      clase: this.claseSeleccionada,
       estado: 'Pendiente',
       metodoPago: 'Billetera',
       fechaReserva: new Date().toISOString(),
       fechaLimitePago: this.fechaLimitePagoCalculada.toISOString(),
-      idVuelo: Number(this.vuelo.idVuelo || this.vuelo.id || 101),
-      clase: this.claseSeleccionada,
-      cantidadPasajeros: this.cantidadPasajeros,
-      pasajeros: pasajerosLimpios
+      pasajeros: pasajerosLimpios as any
     };
 
     this.compraReservaService.crearReserva(payload).subscribe({
       next: () => {
-        this.mensajeExito = `¡Reserva confirmada con éxito! Código: ${codigoGenerado}. Tienes 24 horas para realizar el pago.`;
+        this.mensajeExito = `¡Reserva confirmada con éxito! Código: ${codigoGenerado}.`;
         this.cdr.detectChanges();
-        setTimeout(() => {
-          this.mostrarCompraReservaPestana = false;
-        }, 3000);
       },
       error: (err: any) => {
         console.error('Error al registrar la reserva:', err);

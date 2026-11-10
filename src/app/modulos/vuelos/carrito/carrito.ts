@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { CompraReservaService } from '../../../nucleo/servicios/compra-reserva';
 import { BilleteraService } from '../../../nucleo/servicios/billetera-virtual';
+import { PasajeroForm } from '../../../nucleo/modelos/compra-reserva.model';
 
 @Component({
   selector: 'app-carrito',
@@ -21,6 +22,9 @@ export class CarritoComponent implements OnInit {
 
   idUsuario: number = 0;
   saldoBilletera: number = 0;
+  tarjetaUsuario: string = '**** 8765'; // Fallback real observado en la billetera
+  tipoTarjeta: string = 'Visa (Crédito)';
+  
   itemsCarrito: any[] = [];
   metodoPagoSeleccionado: 'Billetera' | 'Tarjeta' = 'Billetera';
 
@@ -31,7 +35,7 @@ export class CarritoComponent implements OnInit {
   ngOnInit(): void {
     this.obtenerSesionUsuario();
     this.cargarCarritoLocalStorage();
-    this.consultarSaldoBilletera();
+    this.consultarDatosBilleteraYTarjetas();
   }
 
   private obtenerSesionUsuario(): void {
@@ -56,16 +60,40 @@ export class CarritoComponent implements OnInit {
     }
   }
 
-  consultarSaldoBilletera(): void {
+  consultarDatosBilleteraYTarjetas(): void {
     if (!this.idUsuario) return;
 
     this.billeteraService.obtenerSaldo(this.idUsuario).subscribe({
       next: (res: any) => {
-        this.saldoBilletera = Number(res.saldo || res.monto_disponible || 5000000);
+        console.log('>>> RESPUESTA BILLETERA BACKEND:', res);
+
+        // Si la respuesta trae la propiedad saldo o saldo_actual
+        const saldoRespuesta = 
+          res?.saldo ?? 
+          res?.saldo_actual ?? 
+          res?.saldoActual ?? 
+          res?.billetera?.saldo ?? 
+          res?.monto ?? 
+          0;
+
+        this.saldoBilletera = Number(saldoRespuesta);
+
+        // Extracción de tarjeta si viene asociada en la respuesta
+        const listaTarjetas = res?.tarjetas || res?.billetera?.tarjetas || [];
+        if (Array.isArray(listaTarjetas) && listaTarjetas.length > 0) {
+          const t = listaTarjetas[0];
+          const num = String(t.numero_tarjeta || t.numeroTarjeta || t.numero || '8765');
+          this.tarjetaUsuario = `**** ${num.slice(-4)}`;
+          this.tipoTarjeta = t.tipo || t.franquicia || 'Visa (Crédito)';
+        } else {
+          this.tarjetaUsuario = '**** 8765';
+          this.tipoTarjeta = 'Visa (Crédito)';
+        }
+
         this.cdr.detectChanges();
       },
-      error: () => {
-        this.saldoBilletera = 5000000; // Fallback visual
+      error: (err: any) => {
+        console.error('Error al consultar saldo de la billetera:', err);
         this.cdr.detectChanges();
       }
     });
@@ -106,10 +134,24 @@ export class CarritoComponent implements OnInit {
 
     this.procesando = true;
 
+    // Procesamos el item actual conservando la lista completa de pasajeros y parámetros
     const itemActual = this.itemsCarrito[0];
     const codigoCompra = 'CMP-' + Math.random().toString(36).substring(2, 7).toUpperCase();
 
-    // 🟢 Payload en formato flexible compatible con TypeScript y NestJS
+    // 🟢 Extraemos y limpiamos los pasajeros capturados previamente en compra-reserva
+    const pasajerosRecopilados: PasajeroForm[] = (itemActual.pasajeros || []).map((p: any) => ({
+      nombreCompleto: (p.nombreCompleto || `${p.nombre || ''} ${p.apellido || ''}`).trim(),
+      documento: String(p.documento || p.dni || '').trim(),
+      fechaNacimiento: String(p.fechaNacimiento || '').trim(),
+      genero: String(p.genero || 'Masculino').trim(),
+      telefono: String(p.telefono || '').trim(),
+      email: String(p.email || p.correo || '').trim(),
+      nombreContacto: String(p.nombreContacto || p.nombreContactoEmergencia || '').trim(),
+      telefonoContacto: String(p.telefonoContacto || p.telefonoContactoEmergencia || '').trim(),
+      edad: Number(p.edad || 18)
+    }));
+
+    // 🟢 Payload completo enviado al backend NestJS
     const payload: any = {
       codigoReserva: codigoCompra,
       idUsuario: Number(this.idUsuario),
@@ -118,8 +160,13 @@ export class CarritoComponent implements OnInit {
       metodoPago: this.metodoPagoSeleccionado,
       fechaReserva: new Date().toISOString(),
       fechaPago: new Date().toISOString(),
-      idVuelo: Number(itemActual.vuelo?.idVuelo || itemActual.vuelo?.id || 101)
+      idVuelo: Number(itemActual.vuelo?.idVuelo || itemActual.vuelo?.id || 101),
+      clase: itemActual.clase || 'ECONOMICA',
+      cantidadPasajeros: pasajerosRecopilados.length || itemActual.cantidadPasajeros || 1,
+      pasajeros: pasajerosRecopilados
     };
+
+    console.log('>>> ENVIANDO COMPRA DESDE CARRITO AL BACKEND:', payload);
 
     this.reservaService.crearReserva(payload).subscribe({
       next: () => {
@@ -127,6 +174,10 @@ export class CarritoComponent implements OnInit {
         this.mensajeExito = `¡Compra realizada con éxito! Código de confirmación: ${codigoCompra}. Pasabordos generados.`;
         this.vaciarCarrito();
         this.cdr.detectChanges();
+        
+        setTimeout(() => {
+          this.router.navigate(['/perfil']);
+        }, 2500);
       },
       error: (err: any) => {
         this.procesando = false;

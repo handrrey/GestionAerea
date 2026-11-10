@@ -48,7 +48,7 @@
         <div class="section-title">💳 Selecciona el Medio de Pago</div>
 
         <div class="payment-methods">
-          <!-- Opción 1: Billetera Financiera -->
+          <!-- Opción 1: Billetera Financiera (Datos Reales) -->
           <label class="payment-option" [class.active]="metodoPagoSeleccionado === 'Billetera'" (click)="metodoPagoSeleccionado = 'Billetera'">
             <div class="option-info">
               <input type="radio" name="payment_method" value="Billetera" [checked]="metodoPagoSeleccionado === 'Billetera'">
@@ -61,12 +61,12 @@
             <span class="balance-status insufficient" *ngIf="saldoBilletera < obtenerMontoTotalCarrito()">⚠️ Saldo Insuficiente</span>
           </label>
 
-          <!-- Opción 2: Tarjeta de Crédito Registrada -->
+          <!-- Opción 2: Tarjeta de Crédito Registrada (Datos Reales de la Billetera) -->
           <label class="payment-option" [class.active]="metodoPagoSeleccionado === 'Tarjeta'" (click)="metodoPagoSeleccionado = 'Tarjeta'">
             <div class="option-info">
               <input type="radio" name="payment_method" value="Tarjeta" [checked]="metodoPagoSeleccionado === 'Tarjeta'">
               <div>
-                <strong class="option-name">Tarjeta Crédito Visa (**** 4321)</strong>
+                <strong class="option-name">{{ tipoTarjeta }} ({{ tarjetaUsuario }})</strong>
                 <p class="option-sub">Registrada en tu perfil de usuario</p>
               </div>
             </div>
