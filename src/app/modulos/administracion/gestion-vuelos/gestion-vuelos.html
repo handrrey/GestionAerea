@@ -96,7 +96,7 @@
               </td>
               <td>
                 {{ formatearFecha(vuelo.fecha) }} 
-                <span *ngIf="vuelo.horaVuelo">- {{ vuelo.horaVuelo }}</span>
+                - <span *ngIf="vuelo.horaVuelo">{{ vuelo.horaVuelo }}</span>
               </td>
               <td>
                 {{ vuelo.duracionVuelo || '-' }} hs
@@ -155,7 +155,7 @@
     </div>
     <div class="modal-body">
       
-      <!-- Banner de Error del Modal (Renderiza errores del Backend o Duplicados) -->
+      <!-- Banner de Error del Modal -->
       <div 
         *ngIf="mensajeErrorModal" 
         style="background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; padding: 10px 14px; border-radius: 6px; margin-bottom: 14px; font-size: 13px; font-weight: 500;">
@@ -172,14 +172,16 @@
         </span>
       </div>
 
+      <!-- Campo de Código de Vuelo Autogenerado y Deshabilitado -->
       <div class="form-group">
-        <label>Código del Vuelo</label>
+        <label>Código del Vuelo (Autogenerado)</label>
         <input 
           type="text" 
           name="codigo" 
           [(ngModel)]="vueloForm.codigo" 
-          [disabled]="editando" 
-          placeholder="Ej. GA-1002">
+          [disabled]="true" 
+          readonly
+          placeholder="Autogenerado (Ej. GA-1234)">
       </div>
 
       <!-- Desplegables Origen y Destino -->

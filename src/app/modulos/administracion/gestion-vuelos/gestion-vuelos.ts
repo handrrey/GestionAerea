@@ -94,10 +94,16 @@ export class GestionVuelosComponent implements OnInit {
     });
   }
 
+  // Genera un código con patrón "GA-" seguido de 4 dígitos (Ej. GA-4819)
+  generarCodigoAleatorio(): string {
+    const numeroAleatorio = Math.floor(1000 + Math.random() * 9000);
+    return `GA-${numeroAleatorio}`;
+  }
+
   obtenerVueloVacio(): Vuelo {
     return { 
       id: 0, 
-      codigo: '', 
+      codigo: this.generarCodigoAleatorio(), 
       origen: '', 
       destino: '', 
       fecha: new Date(), 
@@ -179,7 +185,6 @@ export class GestionVuelosComponent implements OnInit {
     this.editando = true;
     this.mensajeErrorModal = '';
 
-    // Normalizamos la fecha a formato ISO (YYYY-MM-DD) para el input type="date"
     let fechaFormateada = '';
     const rawFecha: any = vuelo.fecha || (vuelo as any).fechaVuelo;
 
@@ -200,7 +205,6 @@ export class GestionVuelosComponent implements OnInit {
     const origenRaw = vuelo.origen || vAny.origen || vAny.origen_vuelo || '';
     const destinoRaw = vuelo.destino || vAny.destino || vAny.destino_vuelo || '';
 
-    // Busca coincidencia en las listas con código IATA para rellenar los desplegables
     const origenCoincidencia = this.ciudadesOrigen.find(c => 
       c.toLowerCase().includes(origenRaw.toLowerCase())
     ) || origenRaw;
@@ -254,12 +258,10 @@ export class GestionVuelosComponent implements OnInit {
     let h = 0;
     let m = 0;
 
-    // Detectar si incluye 'p. m.' / 'pm' o 'a. m.' / 'am'
     const strLower = horaStr.toLowerCase();
     const esPM = strLower.includes('p');
     const esAM = strLower.includes('a');
 
-    // Extraer solo los números de horas y minutos
     const numeros = horaStr.match(/\d+/g);
     if (!numeros || numeros.length < 2) {
       return '00:00';
@@ -280,7 +282,7 @@ export class GestionVuelosComponent implements OnInit {
   guardarVuelo(): void {
     this.mensajeErrorModal = '';
 
-    // 1. Campos obligatorios
+    // 1. Campos obligatorios (el código se valida automáticamente)
     if (
       !this.vueloForm.codigo || 
       !this.vueloForm.origen || 
@@ -387,7 +389,7 @@ export class GestionVuelosComponent implements OnInit {
           } else {
             const msjBackend = err.error?.message;
             if (Array.isArray(msjBackend)) {
-              this.mensajeErrorModal = msjBackend[0]; // Muestra el mensaje de @EsCodigo()
+              this.mensajeErrorModal = msjBackend[0];
             } else if (typeof msjBackend === 'string') {
               this.mensajeErrorModal = msjBackend;
             } else {
