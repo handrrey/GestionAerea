@@ -1,0 +1,255 @@
+/* Estilos Globales del Módulo con Colores Hexadecimales Directos */
+
+.seat-map-page {
+  background: linear-gradient(135deg, #521E89 0%, #763CB4 50%, #AC6EEF 100%) !important;
+  display: flex !important; 
+  justify-content: center !important; 
+  align-items: center !important; 
+  min-height: 100vh !important; 
+  padding: 30px 15px !important;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+.seat-map-card {
+  background: #FFFFFF !important;
+  width: 100% !important;
+  max-width: 760px !important;
+  padding: 35px !important;
+  border-radius: 20px !important;
+  border: 1px solid #D3AFFB !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2) !important;
+}
+
+.header-text { 
+  text-align: center !important; 
+  margin-bottom: 20px !important; 
+}
+
+.title { 
+  color: #521E89 !important; 
+  font-size: 22px !important; 
+  font-weight: 700 !important; 
+}
+
+.subtitle { 
+  color: #763CB4 !important; 
+  font-size: 14px !important; 
+  margin-top: 4px !important; 
+}
+
+/* Pestañas de Pasajeros */
+.pasajeros-tabs {
+  display: flex !important;
+  gap: 8px !important;
+  justify-content: center !important;
+  margin-bottom: 20px !important;
+  flex-wrap: wrap !important;
+}
+
+.tab-btn {
+  background: #FAFAFA !important;
+  border: 1px solid #D3AFFB !important;
+  padding: 8px 14px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #521E89 !important;
+  cursor: pointer !important;
+}
+
+.tab-btn.active {
+  background: #521E89 !important;
+  color: #FFFFFF !important;
+  border-color: #521E89 !important;
+}
+
+.clase-badge {
+  font-size: 10px !important;
+  background-color: #EAEAEA !important;
+  color: #555555 !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  margin-left: 4px !important;
+}
+
+.clase-badge.primera {
+  background-color: #F1C40F !important;
+  color: #333333 !important;
+  font-weight: 700 !important;
+}
+
+/* Leyenda de Estados */
+.legend-container {
+  display: flex !important;
+  justify-content: center !important;
+  flex-wrap: wrap !important;
+  gap: 15px !important;
+  background-color: #FAFAFA !important;
+  padding: 12px 18px !important;
+  border-radius: 12px !important;
+  border: 1px solid #D3AFFB !important;
+  margin-bottom: 25px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #521E89 !important;
+}
+
+.legend-item { 
+  display: flex !important; 
+  align-items: center !important; 
+  gap: 6px !important; 
+}
+
+.legend-box { 
+  width: 16px !important; 
+  height: 16px !important; 
+  border-radius: 4px !important; 
+  display: inline-block !important;
+}
+
+.bg-unavailable { background-color: #F1C40F !important; } /* Amarillo: Inhabilitado / Otra Clase */
+.bg-available { background-color: #2ECC71 !important; }   /* Verde: Disponible */
+.bg-reserved { background-color: #E74C3C !important; }    /* Rojo: Reservado */
+.bg-assigned { background-color: #3498DB !important; }    /* Azul: Asignado a tu reserva */
+
+/* Cabina del Avión con Scroll Vertical para Soportar 42 Filas */
+.plane-cabin {
+  background: #FAFAFA !important;
+  border: 2px solid #D3AFFB !important;
+  border-radius: 40px 40px 15px 15px !important;
+  padding: 30px 20px !important;
+  margin-bottom: 25px !important;
+  max-width: 500px !important;
+  max-height: 480px !important;
+  overflow-y: auto !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.plane-nose {
+  text-align: center !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #763CB4 !important;
+  margin-bottom: 20px !important;
+  letter-spacing: 1px !important;
+}
+
+.seats-grid {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+
+.seat-row {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.row-number {
+  width: 24px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #763CB4 !important;
+  text-align: center !important;
+}
+
+.aisle { 
+  width: 20px !important; 
+}
+
+/* Sillas del Avión */
+.seat {
+  width: 36px !important;
+  height: 38px !important;
+  border-radius: 8px 8px 4px 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #FFFFFF !important;
+  cursor: pointer !important;
+  transition: transform 0.2s, box-shadow 0.2s !important;
+}
+
+.seat-empty {
+  width: 36px !important;
+  height: 38px !important;
+}
+
+.primera-clase-border {
+  border: 2px solid #D4AC0D !important;
+}
+
+.seat.unavailable { 
+  background-color: #F1C40F !important; 
+  color: #333333 !important; 
+  cursor: not-allowed !important; 
+}
+
+.seat.available { 
+  background-color: #2ECC71 !important; 
+  color: #FFFFFF !important;
+}
+
+.seat.reserved { 
+  background-color: #E74C3C !important; 
+  color: #FFFFFF !important;
+  cursor: not-allowed !important; 
+}
+
+.seat.assigned { 
+  background-color: #3498DB !important; 
+  color: #FFFFFF !important;
+  box-shadow: 0 0 0 2px #521E89 !important; 
+}
+
+.selection-summary {
+  background-color: #FAFAFA !important;
+  border: 1px solid #D3AFFB !important;
+  border-radius: 12px !important;
+  padding: 15px !important;
+  text-align: center !important;
+  font-size: 13px !important;
+  color: #521E89 !important;
+  margin-bottom: 25px !important;
+}
+
+.notice { 
+  font-size: 11px !important; 
+  color: #763CB4 !important; 
+  margin-top: 4px !important; 
+}
+
+.button-group {
+  display: flex !important;
+  gap: 15px !important;
+}
+
+.btn-cancel {
+  flex: 1 !important;
+  height: 46px !important;
+  background-color: transparent !important;
+  border: 1px solid #521E89 !important;
+  color: #521E89 !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+}
+
+.btn-confirm {
+  flex: 2 !important;
+  height: 46px !important;
+  background-color: #521E89 !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 12px rgba(82, 30, 137, 0.25) !important;
+}

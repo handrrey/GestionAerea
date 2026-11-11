@@ -134,50 +134,51 @@ export class CarritoComponent implements OnInit {
 
     this.procesando = true;
 
-    // Procesamos el item actual conservando la lista completa de pasajeros y parámetros
     const itemActual = this.itemsCarrito[0];
-    const codigoCompra = 'CMP-' + Math.random().toString(36).substring(2, 7).toUpperCase();
 
-    // 🟢 Extraemos y limpiamos los pasajeros capturados previamente en compra-reserva
+    // 🟢 TRAZABILIDAD: Preserva el codigoReserva original generado al apartar el vuelo.
+    const codigoReservaFinal = itemActual.codigoReserva || itemActual.codigo || ('CMP-' + Math.random().toString(36).substring(2, 7).toUpperCase());
+
+    // 🟢 Limpieza de pasajeros según el DTO estricto
     const pasajerosRecopilados: PasajeroForm[] = (itemActual.pasajeros || []).map((p: any) => ({
-      nombreCompleto: (p.nombreCompleto || `${p.nombre || ''} ${p.apellido || ''}`).trim(),
+      nombreCompleto: (p.nombreCompleto || `${p.nombres || p.nombre || ''} ${p.apellidos || p.apellido || ''}`).trim(),
       documento: String(p.documento || p.dni || '').trim(),
       fechaNacimiento: String(p.fechaNacimiento || '').trim(),
       genero: String(p.genero || 'Masculino').trim(),
       telefono: String(p.telefono || '').trim(),
       email: String(p.email || p.correo || '').trim(),
-      nombreContacto: String(p.nombreContacto || p.nombreContactoEmergencia || '').trim(),
-      telefonoContacto: String(p.telefonoContacto || p.telefonoContactoEmergencia || '').trim(),
+      nombreContacto: String(p.nombreContacto || p.nombre_contacto || '').trim(),
+      telefonoContacto: String(p.telefonoContacto || p.telefono_contacto || '').trim(),
       edad: Number(p.edad || 18)
     }));
 
-    // 🟢 Payload completo enviado al backend NestJS
+    // 🟢 Payload estricto matching DTO (SIN idReserva para evitar el 400 ValidationPipe)
     const payload: any = {
-      codigoReserva: codigoCompra,
+      codigoReserva: codigoReservaFinal,
       idUsuario: Number(this.idUsuario),
       montoTotal: Number(totalPagar),
       estado: 'Pagado',
       metodoPago: this.metodoPagoSeleccionado,
-      fechaReserva: new Date().toISOString(),
+      fechaReserva: itemActual.fechaReserva || new Date().toISOString(),
       fechaPago: new Date().toISOString(),
-      idVuelo: Number(itemActual.vuelo?.idVuelo || itemActual.vuelo?.id || 101),
+      idVuelo: Number(itemActual.vuelo?.idVuelo || itemActual.vuelo?.id || itemActual.idVuelo || 101),
       clase: itemActual.clase || 'ECONOMICA',
       cantidadPasajeros: pasajerosRecopilados.length || itemActual.cantidadPasajeros || 1,
       pasajeros: pasajerosRecopilados
     };
 
-    console.log('>>> ENVIANDO COMPRA DESDE CARRITO AL BACKEND:', payload);
+    console.log('>>> PAYLOAD PAGAR RESERVA LIMPIO:', payload);
 
     this.reservaService.crearReserva(payload).subscribe({
       next: () => {
         this.procesando = false;
-        this.mensajeExito = `¡Compra realizada con éxito! Código de confirmación: ${codigoCompra}. Pasabordos generados.`;
+        this.mensajeExito = `¡Compra realizada con éxito! Código de confirmación: ${codigoReservaFinal}. Pasabordos generados.`;
         this.vaciarCarrito();
         this.cdr.detectChanges();
         
         setTimeout(() => {
-          this.router.navigate(['/perfil']);
-        }, 2500);
+          this.router.navigate(['/asignacion-sillas']);
+        }, 250);
       },
       error: (err: any) => {
         this.procesando = false;

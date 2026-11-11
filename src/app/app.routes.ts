@@ -14,6 +14,7 @@ import { BilleteraVirtualComponent } from './modulos/usuario/billetera-virtual/b
 import { CompraReservaComponent } from './modulos/vuelos/compra-reserva/compra-reserva';
 import { MisReservasComponent } from './modulos/usuario/mis-reservas/mis-reservas';
 import { CarritoComponent } from './modulos/vuelos/carrito/carrito';
+import { AsignacionSillasComponent } from './modulos/vuelos/asignacion-sillas/asignacion-sillas';   
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -31,5 +32,6 @@ export const routes: Routes = [
   { path: 'compra-reserva', component: CompraReservaComponent },
   { path: 'mis-reservas', component: MisReservasComponent },
   { path: 'carrito', component: CarritoComponent },
+  { path: 'asignacion-sillas', component: AsignacionSillasComponent },
   { path: '**', redirectTo: 'home' }
 ];

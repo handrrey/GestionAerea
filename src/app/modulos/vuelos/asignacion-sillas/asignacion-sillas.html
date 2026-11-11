@@ -1,0 +1,106 @@
+<div class="seat-map-page">
+  <div class="seat-map-card">
+    
+    <!-- Encabezado de la Sección -->
+    <div class="header-text">
+      <h1 class="title">Selección y Cambio de Silla</h1>
+      <p class="subtitle">
+        Vuelo {{ vueloInfo?.codigo || vueloInfo?.codigoVuelo || 'AV-101' }} | 
+        {{ vueloInfo?.origen || 'Origen' }} ➔ {{ vueloInfo?.destino || 'Destino' }} 
+        ({{ esVueloNacional ? 'Vuelo Nacional - 150 Sillas' : 'Vuelo Internacional - 250 Sillas' }})
+      </p>
+    </div>
+
+    <!-- Pestañas para Selección de Pasajeros -->
+    <div class="pasajeros-tabs">
+      <button *ngFor="let p of pasajeros; let i = index" 
+              type="button"
+              class="tab-btn" 
+              [class.active]="i === pasajeroSeleccionadoIndex"
+              (click)="seleccionarPasajero(i)">
+        👤 {{ p.nombreCompleto }} 
+        <span class="clase-badge" [class.primera]="p.clase === 'PRIMERA'">[{{ p.clase }}]</span>
+        <span class="seat-tag">({{ p.sillaNueva || p.sillaActual }})</span>
+      </button>
+    </div>
+
+    <!-- Leyenda de Estados de Asiento -->
+    <div class="legend-container">
+      <div class="legend-item"><div class="legend-box bg-unavailable"></div> No disponible (Otra Clase/Inhabilitado)</div>
+      <div class="legend-item"><div class="legend-box bg-available"></div> Disponible</div>
+      <div class="legend-item"><div class="legend-box bg-reserved"></div> Ya reservado</div>
+      <div class="legend-item"><div class="legend-box bg-assigned"></div> Asignado en esta reserva</div>
+    </div>
+
+    <!-- Alerta / Mensaje de Notificación -->
+    <div *ngIf="mensajeNotificacion" class="notificacion-bar">
+      {{ mensajeNotificacion }}
+    </div>
+
+    <!-- Representación de la Cabina del Avión -->
+    <div class="plane-cabin">
+      <div class="plane-nose">▲ CABINA PRINCIPAL / FRENTE DEL AVIÓN ▲</div>
+
+      <div class="seats-grid">
+        <div class="seat-row" *ngFor="let f of filas">
+          <span class="row-number">{{ f }}</span>
+
+          <!-- Lado Izquierdo (A, B, C) -->
+          <ng-container *ngFor="let l of letrasIzquierda">
+            <div *ngIf="existeSilla(f, l)"
+                 class="seat" 
+                 [class.primera-clase-border]="esPrimeraClaseFilaLetra(f, l)"
+                 [class.available]="esEstado(f, l, 'available')"
+                 [class.unavailable]="esEstado(f, l, 'unavailable')"
+                 [class.reserved]="esEstado(f, l, 'reserved')"
+                 [class.assigned]="esEstado(f, l, 'assigned')"
+                 (click)="seleccionarSillaPorFilaYLetra(f, l)">
+              {{ f }}{{ l }}
+            </div>
+            <!-- Hueco transparente si en la última fila no existe esta silla -->
+            <div *ngIf="!existeSilla(f, l)" class="seat-empty"></div>
+          </ng-container>
+
+          <!-- Pasillo Central -->
+          <div class="aisle"></div>
+
+          <!-- Lado Derecho (D, E, F) -->
+          <ng-container *ngFor="let l of letrasDerecha">
+            <div *ngIf="existeSilla(f, l)"
+                 class="seat" 
+                 [class.primera-clase-border]="esPrimeraClaseFilaLetra(f, l)"
+                 [class.available]="esEstado(f, l, 'available')"
+                 [class.unavailable]="esEstado(f, l, 'unavailable')"
+                 [class.reserved]="esEstado(f, l, 'reserved')"
+                 [class.assigned]="esEstado(f, l, 'assigned')"
+                 (click)="seleccionarSillaPorFilaYLetra(f, l)">
+              {{ f }}{{ l }}
+            </div>
+            <!-- Hueco transparente si en la última fila no existe esta silla -->
+            <div *ngIf="!existeSilla(f, l)" class="seat-empty"></div>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen de Selección -->
+    <div class="selection-summary">
+      <p>
+        Pasajero: <strong>{{ pasajeros[pasajeroSeleccionadoIndex]?.nombreCompleto }}</strong> 
+        ({{ pasajeros[pasajeroSeleccionadoIndex]?.clase }}) | 
+        Silla asignada: <strong>{{ pasajeros[pasajeroSeleccionadoIndex]?.sillaActual }} (Azul)</strong> 
+        <span *ngIf="pasajeros[pasajeroSeleccionadoIndex]?.sillaNueva">
+          | Nueva seleccionada: <strong>{{ pasajeros[pasajeroSeleccionadoIndex]?.sillaNueva }} (Verde)</strong>
+        </span>
+      </p>
+      <p class="notice">⚠️ Nota: Solo se permite realizar el cambio de silla una única vez antes de confirmar el Check-in.</p>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="button-group">
+      <button type="button" class="btn-cancel" (click)="cancelar()">CANCELAR</button>
+      <button type="button" class="btn-confirm" (click)="confirmarCambioSillas()">CONFIRMAR CAMBIO DE SILLA</button>
+    </div>
+
+  </div>
+</div>

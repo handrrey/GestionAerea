@@ -289,9 +289,8 @@ export class CompraReservaComponent implements OnInit {
 
     const codigoGenerado = 'RSV-' + Math.random().toString(36).substring(2, 7).toUpperCase();
 
-    // 🟢 Mapeo exacto sin 'nombres' ni 'apellidos' extra
     const pasajerosLimpios = this.pasajeros.map(p => ({
-      nombreCompleto: p.nombreCompleto.trim(), // Contiene "juan ocampo" tal cual
+      nombreCompleto: p.nombreCompleto.trim(),
       documento: p.documento.trim(),
       fechaNacimiento: p.fechaNacimiento.trim(),
       genero: p.genero.trim(),
@@ -302,10 +301,12 @@ export class CompraReservaComponent implements OnInit {
       edad: Number(p.edad || 18)
     }));
 
+    const idVueloReal = Number(this.vuelo.idVuelo || this.vuelo.id || 1);
+
     const payload: CompraReserva = {
       codigoReserva: codigoGenerado,
       idUsuario: Number(this.idUsuario),
-      idVuelo: Number(this.vuelo.idVuelo || this.vuelo.id || 1),
+      idVuelo: idVueloReal,
       montoTotal: Number(this.calcularMontoTotal()),
       cantidadPasajeros: Number(this.cantidadPasajeros),
       clase: this.claseSeleccionada,
@@ -316,10 +317,29 @@ export class CompraReservaComponent implements OnInit {
       pasajeros: pasajerosLimpios as any
     };
 
+    // 🟢 GUARDAR EL VUELO EN LOCALSTORAGE PARA LEERLO EN MIS-RESERVAS
+    try {
+      const mapaVuelos = JSON.parse(localStorage.getItem('app_mapa_vuelos_reservados') || '{}');
+      mapaVuelos[idVueloReal] = {
+        codigo: this.vuelo.codigo || 'AV-800',
+        origen: this.vuelo.origen,
+        destino: this.vuelo.destino,
+        duracion: this.vuelo.duracion || '02h 30m',
+        fechaSalida: this.vuelo.fechaSalida,
+        fechaLlegada: this.vuelo.fechaLlegada
+      };
+      localStorage.setItem('app_mapa_vuelos_reservados', JSON.stringify(mapaVuelos));
+    } catch (e) {
+      console.error('Error al guardar caché local del vuelo:', e);
+    }
+
     this.compraReservaService.crearReserva(payload).subscribe({
       next: () => {
         this.mensajeExito = `¡Reserva confirmada con éxito! Código: ${codigoGenerado}.`;
         this.cdr.detectChanges();
+        setTimeout(() => {
+          this.mostrarCompraReservaPestana = false;
+        }, 3000);
       },
       error: (err: any) => {
         console.error('Error al registrar la reserva:', err);

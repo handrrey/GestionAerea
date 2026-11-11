@@ -87,15 +87,22 @@
           </div>
         </div>
 
-        <!-- Pie de Tarjeta (Monto Total y Botón Cancelar) -->
+        <!-- Pie de Tarjeta (Monto Total y Botones de Acción) -->
         <div class="card-footer">
           <div class="price-box">
             <span class="price-label">Monto Total a Pagar</span>
             <div class="price-amount">${{ r.monto | number }} COP</div>
           </div>
 
-          <div class="action-box">
-            <!-- Botón habilitado para reservas en estado RESERVADO o PENDIENTE -->
+          <div class="action-box flex gap-2 align-items-center">
+            <!-- Botón Pagar Ahora / Añadir al Carrito (Redirecciona al Carrito) -->
+            <button class="btn-pay-now" 
+                    *ngIf="r.estado === 'RESERVADO' || r.estado === 'PENDIENTE'" 
+                    (click)="pagarReserva(r)">
+              🛒 Pagar Ahora
+            </button>
+
+            <!-- Botón Cancelar Reserva -->
             <button class="btn-cancelar" 
                     *ngIf="r.estado === 'RESERVADO' || r.estado === 'PENDIENTE'" 
                     (click)="cancelarReserva(r.idReserva)">
