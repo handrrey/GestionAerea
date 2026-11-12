@@ -45,7 +45,6 @@ export class CompraReservaComponent implements OnInit {
   claseSeleccionada: 'ECONOMICA' | 'PRIMERA_CLASE' = 'ECONOMICA';
   pasajeros: PasajeroForm[] = [];
 
-  // 🟢 Propiedades declaradas para enlazar con [min] y [max] en el HTML
   fechaLimitePagoCalculada: Date = new Date();
   fechaMinimaNacimiento: string = '';
   fechaMaximaNacimiento: string = '';
@@ -54,13 +53,16 @@ export class CompraReservaComponent implements OnInit {
     const navData = this.router.getCurrentNavigation()?.extras?.state?.['vuelo'] || history.state?.vuelo;
 
     if (navData) {
+      const origenStr = navData.origen || navData.ciudadOrigen || navData.ciudad_origen || 'Origen no especificado';
+      const destinoStr = navData.destino || navData.ciudadDestino || navData.ciudad_destino || 'Destino no especificado';
+      const tipoDetectado = this.determinarTipoVuelo(navData, origenStr, destinoStr);
+
       this.vuelo = {
-        // 🟢 Asegura tomar el id real del vuelo (id, idVuelo o id_vuelo)
         idVuelo: Number(navData.id || navData.idVuelo || navData.id_vuelo || 1),
         codigo: navData.codigo || navData.codigoVuelo || navData.codigo_vuelo || 'AV-800',
-        tipo: navData.tipo || (navData.destino?.toLowerCase().includes('mad') ? 'INTERNACIONAL' : 'NACIONAL'),
-        origen: navData.origen || 'Origen no especificado',
-        destino: navData.destino || 'Destino no especificado',
+        tipo: tipoDetectado,
+        origen: origenStr,
+        destino: destinoStr,
         duracion: navData.duracionVuelo || navData.duracion || '02h 30m',
         fechaSalida: navData.fecha ? `${navData.fecha}T${navData.horaVuelo || '08:00:00'}` : new Date().toISOString(),
         fechaLlegada: navData.fecha ? `${navData.fecha}T${navData.horaVuelo || '12:00:00'}` : new Date().toISOString(),
@@ -75,6 +77,46 @@ export class CompraReservaComponent implements OnInit {
 
     this.mostrarCompraReservaPestana = true;
     this.cdr.detectChanges();
+  }
+
+  /**
+   * 🟢 1. Detecta correctamente si el vuelo es NACIONAL o INTERNACIONAL
+   */
+  private determinarTipoVuelo(navData: any, origen: string, destino: string): 'NACIONAL' | 'INTERNACIONAL' {
+    const tipoExplicito = String(navData?.tipo || navData?.tipoVuelo || navData?.tipo_vuelo || '').toUpperCase().trim();
+    if (tipoExplicito.includes('INTERNACIONAL')) return 'INTERNACIONAL';
+    if (tipoExplicito.includes('NACIONAL')) return 'NACIONAL';
+
+    const rutaCompleta = `${origen} ${destino}`.toLowerCase();
+
+    // Palabras clave y códigos IATA internacionales
+    const destinosInternacionales = [
+      'madrid', '(mad)', 'miami', '(mia)', 'nueva york', 'new york', '(nyc)', '(jfk)',
+      'londres', 'london', '(lhr)', 'paris', '(cdg)', 'panama', '(pty)', 'mexico', '(mex)',
+      'cancun', '(cun)', 'lima', '(lim)', 'quito', '(uio)', 'santiago', '(scl)',
+      'buenos aires', '(eze)', 'sao paulo', '(gru)', 'toronto', '(yyz)', 'los angeles', '(lax)'
+    ];
+
+    if (destinosInternacionales.some(palabra => rutaCompleta.includes(palabra))) {
+      return 'INTERNACIONAL';
+    }
+
+    // Si ambas ciudades son de Colombia, es NACIONAL
+    const ciudadesColombia = [
+      'bogota', 'bogotá', '(bog)', 'medellin', 'medellín', '(mde)',
+      'cali', '(clo)', 'pereira', '(pei)', 'cartagena', '(ctg)',
+      'barranquilla', '(baq)', 'santa marta', '(smr)', 'bucaramanga', '(bga)',
+      'san andres', '(adz)', 'armenia', '(axm)', 'manizales', '(mzl)', 'cucuta', '(cuc)'
+    ];
+
+    const origenEsColombia = ciudadesColombia.some(c => origen.toLowerCase().includes(c));
+    const destinoEsColombia = ciudadesColombia.some(c => destino.toLowerCase().includes(c));
+
+    if (origenEsColombia && destinoEsColombia) {
+      return 'NACIONAL';
+    }
+
+    return 'INTERNACIONAL';
   }
 
   private obtenerSesionUsuario(): void {
@@ -161,30 +203,79 @@ export class CompraReservaComponent implements OnInit {
     return Math.round(this.vuelo.precioBase * factorClase * this.cantidadPasajeros);
   }
 
+  /**
+   * Normaliza texto eliminando tildes, dobles espacios y mayúsculas para detectar nombres duplicados
+   */
+  private normalizarTextoComparacion(texto: string): string {
+    return String(texto || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ');
+  }
+
+  /**
+   * 🟢 2. Valida campos individuales + prohíbe pasajeros duplicados (cédula y nombres/apellidos)
+   */
   validarPasajeros(): boolean {
     this.mensajeError = '';
     const regexDocumento = /^\d{8,10}$/;
     const regexTelefono = /^\d{10}$/;
     const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const regexSoloLetras = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/;
 
+    const documentosRegistrados = new Map<string, number>();
+    const nombresRegistrados = new Map<string, number>();
     let totalAdultos = 0;
 
     for (let i = 0; i < this.pasajeros.length; i++) {
       const p = this.pasajeros[i];
       const numPasajero = i + 1;
 
-      if (!p.nombreCompleto || p.nombreCompleto.trim() === '') {
+      // Validar nombre y apellido (debe tener al menos 2 palabras: nombre y apellido)
+      const nombreLimpio = String(p.nombreCompleto || '').trim().replace(/\s+/g, ' ');
+      if (!nombreLimpio) {
         this.mensajeError = `El nombre completo del Pasajero ${numPasajero} no puede estar vacío.`;
         return false;
       }
-      if (!p.documento || p.documento.trim() === '') {
+      if (!regexSoloLetras.test(nombreLimpio)) {
+        this.mensajeError = `El nombre del Pasajero ${numPasajero} solo puede contener letras y espacios.`;
+        return false;
+      }
+      if (nombreLimpio.split(' ').length < 2) {
+        this.mensajeError = `Debes ingresar al menos un nombre y un apellido para el Pasajero ${numPasajero}.`;
+        return false;
+      }
+
+      // 🟢 Validar que no haya dos pasajeros con el mismo nombre y apellido
+      const nombreNormalizado = this.normalizarTextoComparacion(nombreLimpio);
+      if (nombresRegistrados.has(nombreNormalizado)) {
+        const pasajeroPrevio = nombresRegistrados.get(nombreNormalizado);
+        this.mensajeError = `⚠️ Regla de aerolínea: El pasajero "${nombreLimpio}" ya está registrado en el Pasajero ${pasajeroPrevio}. Un mismo pasajero no puede ocupar dos asientos en el mismo vuelo.`;
+        return false;
+      }
+      nombresRegistrados.set(nombreNormalizado, numPasajero);
+
+      // Validar documento
+      const docLimpio = String(p.documento || '').trim();
+      if (!docLimpio) {
         this.mensajeError = `El documento del Pasajero ${numPasajero} no puede estar vacío.`;
         return false;
       }
-      if (!regexDocumento.test(p.documento.trim())) {
+      if (!regexDocumento.test(docLimpio)) {
         this.mensajeError = `Documento inválido en el Pasajero ${numPasajero}. Debe tener obligatoriamente entre 8 y 10 dígitos.`;
         return false;
       }
+
+      // 🟢 Validar que no haya dos pasajeros con la misma cédula/documento
+      if (documentosRegistrados.has(docLimpio)) {
+        const pasajeroPrevio = documentosRegistrados.get(docLimpio);
+        this.mensajeError = `⚠️ Regla de aerolínea: La cédula/documento ${docLimpio} del Pasajero ${numPasajero} está duplicada con el Pasajero ${pasajeroPrevio}. Un pasajero no puede tener dos asientos.`;
+        return false;
+      }
+      documentosRegistrados.set(docLimpio, numPasajero);
+
       if (!p.fechaNacimiento || p.fechaNacimiento.trim() === '') {
         this.mensajeError = `La fecha de nacimiento del Pasajero ${numPasajero} es requerida.`;
         return false;
@@ -221,6 +312,10 @@ export class CompraReservaComponent implements OnInit {
       }
       if (!p.nombreContacto || p.nombreContacto.trim() === '') {
         this.mensajeError = `El nombre de contacto del Pasajero ${numPasajero} no puede estar vacío.`;
+        return false;
+      }
+      if (!regexSoloLetras.test(p.nombreContacto.trim())) {
+        this.mensajeError = `El nombre de contacto del Pasajero ${numPasajero} solo puede contener letras y espacios.`;
         return false;
       }
       if (!p.telefonoContacto || p.telefonoContacto.trim() === '') {
@@ -317,7 +412,6 @@ export class CompraReservaComponent implements OnInit {
       pasajeros: pasajerosLimpios as any
     };
 
-    // 🟢 GUARDAR EL VUELO EN LOCALSTORAGE PARA LEERLO EN MIS-RESERVAS
     try {
       const mapaVuelos = JSON.parse(localStorage.getItem('app_mapa_vuelos_reservados') || '{}');
       mapaVuelos[idVueloReal] = {

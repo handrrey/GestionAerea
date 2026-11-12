@@ -81,9 +81,15 @@
             </div>
           </div>
 
-          <!-- Detalles de Pasajeros -->
-          <div class="passengers-info">
+          <!-- Detalles de Pasajeros y Asientos Reservados -->
+          <div class="passengers-info" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between;">
             <span>👥 <strong>Pasajeros registrados:</strong> {{ r.cantidadPasajeros }} pasajero(s)</span>
+            <span>
+              💺 <strong>Asientos reservados:</strong> 
+              <span style="background: #f3e8ff; color: #521E89; padding: 3px 10px; border-radius: 12px; font-weight: 600; margin-left: 4px;">
+                {{ r.asientos.join(', ') }}
+              </span>
+            </span>
           </div>
         </div>
 
@@ -95,7 +101,7 @@
           </div>
 
           <div class="action-box flex gap-2 align-items-center">
-            <!-- Botón Pagar Ahora / Añadir al Carrito (Redirecciona al Carrito) -->
+            <!-- Botón Pagar Ahora / Añadir al Carrito -->
             <button class="btn-pay-now" 
                     *ngIf="r.estado === 'RESERVADO' || r.estado === 'PENDIENTE'" 
                     (click)="pagarReserva(r)">
@@ -107,6 +113,14 @@
                     *ngIf="r.estado === 'RESERVADO' || r.estado === 'PENDIENTE'" 
                     (click)="cancelarReserva(r.idReserva)">
               Cancelar Reserva 🚫
+            </button>
+
+            <!-- Botón Cambiar Sillas si ya está PAGADO -->
+            <button class="btn-pay-now" 
+                    *ngIf="r.estado === 'PAGADO'" 
+                    (click)="irAAsignarSillas(r)"
+                    style="background-color: #763CB4;">
+              💺 Gestionar Sillas
             </button>
 
             <span class="resolved-tag" *ngIf="r.estado === 'CANCELADO'">Reserva Anulada</span>

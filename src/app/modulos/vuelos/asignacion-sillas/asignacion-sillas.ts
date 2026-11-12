@@ -318,6 +318,17 @@ export class AsignacionSillasComponent implements OnInit {
       }
     });
 
+    // 🟢 Sincronizar asientos actualizados en localStorage para que se vean al instante en Mis Reservas
+    try {
+      const mapaAsientos = JSON.parse(localStorage.getItem('app_asientos_por_reserva') || '{}');
+      const sillasActualizadas = this.pasajeros.map(p => p.sillaActual);
+      if (this.idReservaReal) mapaAsientos[this.idReservaReal] = sillasActualizadas;
+      if (this.codigoReserva) mapaAsientos[this.codigoReserva] = sillasActualizadas;
+      localStorage.setItem('app_asientos_por_reserva', JSON.stringify(mapaAsientos));
+    } catch (e) {
+      console.error('Error al sincronizar sillas en localStorage:', e);
+    }
+
     // Intentar enviar al backend el primer cambio realizado
     const pCambio = pasajerosConCambio[0];
     const dto = {
