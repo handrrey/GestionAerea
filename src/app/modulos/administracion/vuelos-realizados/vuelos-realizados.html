@@ -1,0 +1,172 @@
+<div class="admin-layout">
+  <!-- Sidebar Navegación Lateral -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">✈</div>
+      <span>Gestión Aérea</span>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li class="menu-item">
+        <a routerLink="/gestion-vuelos"><span>✈</span> Vuelos</a>
+      </li>
+      <li class="menu-item">
+        <a routerLink="/admin/noticias"><span>📢</span> Noticias y Promos</a>
+      </li>
+      <li class="menu-item">
+        <a routerLink="/admin/muro"><span>💬</span> Muro de Mensajes</a>
+      </li>
+      <li class="menu-item active">
+        <a routerLink="/admin/historial-vuelos"><span>📊</span> Vuelos Realizados</a>
+      </li>
+      <li class="menu-item">
+        <a routerLink="/perfil-admin"><span>⚙️</span> Perfil</a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="menu-item">
+        <a (click)="cerrarSesion()" style="cursor: pointer;"><span>🚪</span> Cerrar Sesión</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <!-- Topbar Superior -->
+    <header class="topbar">
+      <h1 class="topbar-title">Historial de Vuelos Realizados</h1>
+      <div class="user-profile">
+        <span class="role-badge">{{ usuarioActual?.rol || 'ADMINISTRADOR' }}</span>
+        <span class="user-name">{{ usuarioActual?.nombres || 'Administrador' }} {{ usuarioActual?.apellidos || '' }}</span>
+      </div>
+    </header>
+
+    <!-- Cuerpo del Dashboard -->
+    <div class="dashboard-body">
+      <div class="action-bar">
+        <div>
+          <h2>Operaciones Finalizadas</h2>
+          <p class="subtitle-text">Registro histórico de vuelos que ya completaron su itinerario.</p>
+        </div>
+        <button class="btn-refresh" (click)="cargarHistorialVuelos()">🔄 Actualizar Historial</button>
+      </div>
+
+      <!-- Tarjetas KPI Históricas -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-title">VUELOS REALIZADOS</div>
+          <div class="kpi-value">{{ totalVuelosCompletados }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">PASAJEROS TRANSPORTADOS</div>
+          <div class="kpi-value">{{ totalPasajerosHistorico }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">OCUPACIÓN PROMEDIO</div>
+          <div class="kpi-value">{{ porcentajeOcupacionPromedio }}%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">RECAUDO CONFIRMADO</div>
+          <div class="kpi-value kpi-money">${{ totalRecaudoHistorico | number:'1.0-0' }}</div>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros -->
+      <div class="filters-bar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            [(ngModel)]="filtroBusqueda"
+            placeholder="Buscar por código (Ej. GA-2001), ciudad de origen o destino...">
+        </div>
+
+        <div class="filter-pills">
+          <button
+            class="pill-btn"
+            [class.active]="filtroTipo === 'TODOS'"
+            (click)="filtroTipo = 'TODOS'">
+            Todos ({{ vuelosRealizados.length }})
+          </button>
+          <button
+            class="pill-btn"
+            [class.active]="filtroTipo === 'NACIONAL'"
+            (click)="filtroTipo = 'NACIONAL'">
+            Nacionales
+          </button>
+          <button
+            class="pill-btn"
+            [class.active]="filtroTipo === 'INTERNACIONAL'"
+            (click)="filtroTipo = 'INTERNACIONAL'">
+            Internacionales
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla de Vuelos Realizados -->
+      <div class="table-container">
+        <div class="table-header-title">
+          <span>Registro de Vuelos Finalizados</span>
+          <span class="count-pill">{{ vuelosFiltrados.length }} vuelo(s)</span>
+        </div>
+
+        <div *ngIf="cargando" class="state-box">
+          🔄 Cargando historial de vuelos realizados...
+        </div>
+
+        <div *ngIf="!cargando && vuelosFiltrados.length === 0" class="state-box">
+          <div class="empty-icon">🛫</div>
+          <p>No se encontraron vuelos realizados con los filtros actuales.</p>
+        </div>
+
+        <table *ngIf="!cargando && vuelosFiltrados.length > 0">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Tipo</th>
+              <th>Ruta (Origen → Destino)</th>
+              <th>Fecha y Horario</th>
+              <th>Duración</th>
+              <th>Tarifas (Econ. / 1ra)</th>
+              <th>Ocupación</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let vuelo of vuelosFiltrados">
+              <td>
+                <strong>{{ vuelo.codigo }}</strong>
+              </td>
+              <td>
+                <span class="type-badge" [class.inter]="vuelo.tipo === 'INTERNACIONAL'">
+                  {{ vuelo.tipo }}
+                </span>
+              </td>
+              <td>
+                <span class="route-text">{{ vuelo.origen }} → {{ vuelo.destino }}</span>
+              </td>
+              <td>
+                <div><strong>{{ formatearFecha(vuelo.fecha) }}</strong></div>
+                <small class="time-sub">Salida: {{ vuelo.horaVuelo }} | Llegada: {{ vuelo.horaLlegada }}</small>
+              </td>
+              <td>{{ vuelo.duracion }} hs</td>
+              <td>
+                <div class="price-line">Econ: $ {{ vuelo.precioEconomico | number:'1.0-0' }}</div>
+                <div class="price-line">1ra: $ {{ vuelo.precioPrimera | number:'1.0-0' }}</div>
+              </td>
+              <td>
+                <span class="badge-ocupacion">
+                  {{ vuelo.pasajerosTransportados }} / {{ vuelo.capacidadTotal }} sillas
+                </span>
+              </td>
+              <td>
+                <span class="status-completed">✓ Realizado</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>

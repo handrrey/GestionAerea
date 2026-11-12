@@ -71,7 +71,6 @@ export class GestionVuelosComponent implements OnInit {
     this.cargarVuelos(); 
   }
 
-  // 🟢 CAMBIO 1: Consultar vuelos y cruzar el conteo real de reservas existentes desde el backend
   cargarVuelos(): void {
     const reservas$ = this.http.get<any>(`${this.apiUrl}/compra-reserva`).pipe(
       catchError(() => this.http.get<any>(`${this.apiUrl}/reservas`).pipe(catchError(() => of([]))))
@@ -86,7 +85,6 @@ export class GestionVuelosComponent implements OnInit {
           ? reservasRes
           : (reservasRes?.reservas || reservasRes?.data || []);
 
-        // Contar reservas activas (no canceladas) por id_vuelo
         const conteoPorVuelo: Record<number, number> = {};
         for (const r of listaReservas) {
           const estadoRes = String(r.estado || '').toUpperCase();
@@ -97,6 +95,8 @@ export class GestionVuelosComponent implements OnInit {
             conteoPorVuelo[idVueloRes] = (conteoPorVuelo[idVueloRes] || 0) + 1;
           }
         }
+
+        const ahora = new Date().getTime();
 
         this.vuelos = (vuelos || []).map((v: any) => {
           const idVueloReal = Number(v.idVuelo || v.id_vuelo || v.id || 0);
@@ -110,6 +110,15 @@ export class GestionVuelosComponent implements OnInit {
             Number(v.reservasTotal ?? v.reservasCount ?? v.reservas_count ?? 0)
           );
 
+          const estadoRaw = String(v.estado || v.estado_vuelo || 'Programado');
+          const fechaStr = String(v.fechaVuelo || v.fecha_vuelo || v.fecha || '').split('T')[0];
+          const horaStr = String(v.horaVuelo || v.hora_vuelo || '00:00');
+          const fechaHoraSalida = fechaStr ? new Date(`${fechaStr}T${horaStr.slice(0, 5)}:00`).getTime() : NaN;
+
+          const yaFinalizo =
+            estadoRaw.toLowerCase() === 'realizado' ||
+            (estadoRaw.toLowerCase() === 'programado' && !isNaN(fechaHoraSalida) && fechaHoraSalida < ahora);
+
           return {
             ...v,
             id: idVueloReal,
@@ -121,7 +130,7 @@ export class GestionVuelosComponent implements OnInit {
             duracionVuelo: v.duracion || v.duracionVuelo || '',
             precioEconomico: Number(v.costoEconomico ?? v.precioEconomico ?? 0),
             precioPrimera: Number(v.costoPrimera ?? v.precioPrimera ?? 0),
-            estado: v.estado || 'Programado',
+            estado: yaFinalizo ? 'Realizado' : estadoRaw,
             reservasCount: reservasReales
           };
         });
@@ -133,6 +142,11 @@ export class GestionVuelosComponent implements OnInit {
         alert('No se pudieron cargar los vuelos desde el servidor.');
       }
     });
+  }
+
+  // Solo vuelos vigentes (excluye los realizados, que van al módulo /vuelos-realizados)
+  get vuelosVigentes(): Vuelo[] {
+    return this.vuelos.filter(v => (v.estado || (v as any).estado_vuelo) !== 'Realizado');
   }
 
   generarCodigoAleatorio(): string {
@@ -172,7 +186,6 @@ export class GestionVuelosComponent implements OnInit {
     this.actualizarDuracionAutomatica();
   }
 
-  // 🟢 CAMBIO 2: Calcular automáticamente el precio de Primera Clase (+40% sobre Económico)
   onPrecioEconomicoChange(): void {
     const economico = Number(this.vueloForm.precioEconomico || 0);
     this.vueloForm.precioPrimera = economico > 0 ? Math.round(economico * 1.4) : 0;
@@ -330,7 +343,6 @@ export class GestionVuelosComponent implements OnInit {
   guardarVuelo(): void {
     this.mensajeErrorModal = '';
 
-    // Asegurar que precioPrimera siempre sea 40% más que precioEconomico antes de validar y guardar
     this.onPrecioEconomicoChange();
 
     if (
