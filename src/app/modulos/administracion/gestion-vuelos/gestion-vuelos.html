@@ -209,7 +209,7 @@
           <label>Fecha del Vuelo</label>
           <input 
             type="date" 
-            name="fecha"
+            name="fecha" 
             [(ngModel)]="vueloForm.fecha" 
             [disabled]="esFechaHoraDeshabilitada"
             [min]="minFecha"
@@ -237,16 +237,27 @@
         </div>
       </div>
 
-      <!-- Precios Diferenciados -->
+      <!-- Precios Diferenciados (Primera Clase +40% Automático) -->
       <div class="form-row">
         <div class="form-group">
           <label>Precio Económico (COP)</label>
-          <input type="number" name="precioEconomico" [(ngModel)]="vueloForm.precioEconomico" placeholder="Ej. 250000">
+          <input 
+            type="number" 
+            name="precioEconomico" 
+            [(ngModel)]="vueloForm.precioEconomico" 
+            (ngModelChange)="onPrecioEconomicoChange()"
+            placeholder="Ej. 250000">
         </div>
 
         <div class="form-group">
-          <label>Precio Primera Clase (COP)</label>
-          <input type="number" name="precioPrimera" [(ngModel)]="vueloForm.precioPrimera" placeholder="Ej. 650000">
+          <label>Precio Primera Clase (+40% Automático)</label>
+          <input 
+            type="number" 
+            name="precioPrimera" 
+            [(ngModel)]="vueloForm.precioPrimera" 
+            [disabled]="true"
+            readonly
+            placeholder="Se calcula automáticamente">
         </div>
       </div>
 

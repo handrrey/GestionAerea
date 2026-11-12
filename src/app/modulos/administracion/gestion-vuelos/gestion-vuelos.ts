@@ -2,6 +2,9 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { AutenticacionService } from '../../../nucleo/servicios/autenticacion';
 import { VuelosService } from '../../../nucleo/servicios/vuelos';
 import { Usuario } from '../../../nucleo/modelos/usuario.model';
@@ -18,6 +21,7 @@ export class GestionVuelosComponent implements OnInit {
 
   usuarioActual: Usuario | null = null;
   vuelos: Vuelo[] = [];
+  private apiUrl = 'http://localhost:3000/appV1';
   
   ciudadesOrigen: string[] = [
     'Pereira (PEI)', 'Bogotá (BOG)', 'Medellín (MDE)', 'Cali (CLO)', 'Cartagena (CTG)'
@@ -50,7 +54,6 @@ export class GestionVuelosComponent implements OnInit {
   editando: boolean = false;
   vueloForm: Vuelo = this.obtenerVueloVacio();
 
-  // Control para desplegar los errores en el modal
   mensajeErrorModal: string = '';
 
   promocionesActivasCount: number = 3;
@@ -59,6 +62,7 @@ export class GestionVuelosComponent implements OnInit {
   constructor(
     private authService: AutenticacionService,
     private vuelosService: VuelosService,
+    private http: HttpClient,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -67,23 +71,60 @@ export class GestionVuelosComponent implements OnInit {
     this.cargarVuelos(); 
   }
 
+  // 🟢 CAMBIO 1: Consultar vuelos y cruzar el conteo real de reservas existentes desde el backend
   cargarVuelos(): void {
-    this.vuelosService.obtenerVuelos().subscribe({
-      next: (datosBackend: any[]) => {
-        this.vuelos = (datosBackend || []).map(v => ({
-          ...v,
-          id: v.idVuelo || v.id || 0,
-          codigo: v.codigoVuelo || v.codigo || '',
-          origen: v.origen || '',
-          destino: v.destino || '',
-          fecha: v.fechaVuelo || v.fecha || '',
-          horaVuelo: v.horaVuelo || '',
-          duracionVuelo: v.duracion || v.duracionVuelo || '',
-          precioEconomico: Number(v.costoEconomico ?? v.precioEconomico ?? 0),
-          precioPrimera: Number(v.costoPrimera ?? v.precioPrimera ?? 0),
-          estado: v.estado || 'Programado',
-          reservasCount: Number(v.reservasTotal ?? v.reservasCount ?? 0)
-        }));
+    const reservas$ = this.http.get<any>(`${this.apiUrl}/compra-reserva`).pipe(
+      catchError(() => this.http.get<any>(`${this.apiUrl}/reservas`).pipe(catchError(() => of([]))))
+    );
+
+    forkJoin({
+      vuelos: this.vuelosService.obtenerVuelos(),
+      reservasRes: reservas$
+    }).subscribe({
+      next: ({ vuelos, reservasRes }) => {
+        const listaReservas = Array.isArray(reservasRes)
+          ? reservasRes
+          : (reservasRes?.reservas || reservasRes?.data || []);
+
+        // Contar reservas activas (no canceladas) por id_vuelo
+        const conteoPorVuelo: Record<number, number> = {};
+        for (const r of listaReservas) {
+          const estadoRes = String(r.estado || '').toUpperCase();
+          if (estadoRes === 'CANCELADO' || estadoRes === 'EXPIRADO') continue;
+
+          const idVueloRes = Number(r.id_vuelo || r.idVuelo || r.vuelo?.id_vuelo || r.vuelo?.idVuelo || 0);
+          if (idVueloRes > 0) {
+            conteoPorVuelo[idVueloRes] = (conteoPorVuelo[idVueloRes] || 0) + 1;
+          }
+        }
+
+        this.vuelos = (vuelos || []).map((v: any) => {
+          const idVueloReal = Number(v.idVuelo || v.id_vuelo || v.id || 0);
+          const reservasDesdeArray = Array.isArray(v.reservas)
+            ? v.reservas.filter((r: any) => String(r.estado || '').toUpperCase() !== 'CANCELADO').length
+            : 0;
+
+          const reservasReales = Math.max(
+            conteoPorVuelo[idVueloReal] || 0,
+            reservasDesdeArray,
+            Number(v.reservasTotal ?? v.reservasCount ?? v.reservas_count ?? 0)
+          );
+
+          return {
+            ...v,
+            id: idVueloReal,
+            codigo: v.codigoVuelo || v.codigo || '',
+            origen: v.origen || '',
+            destino: v.destino || '',
+            fecha: v.fechaVuelo || v.fecha || '',
+            horaVuelo: v.horaVuelo || '',
+            duracionVuelo: v.duracion || v.duracionVuelo || '',
+            precioEconomico: Number(v.costoEconomico ?? v.precioEconomico ?? 0),
+            precioPrimera: Number(v.costoPrimera ?? v.precioPrimera ?? 0),
+            estado: v.estado || 'Programado',
+            reservasCount: reservasReales
+          };
+        });
 
         this.cdr.detectChanges();
       },
@@ -94,7 +135,6 @@ export class GestionVuelosComponent implements OnInit {
     });
   }
 
-  // Genera un código con patrón "GA-" seguido de 4 dígitos (Ej. GA-4819)
   generarCodigoAleatorio(): string {
     const numeroAleatorio = Math.floor(1000 + Math.random() * 9000);
     return `GA-${numeroAleatorio}`;
@@ -130,6 +170,12 @@ export class GestionVuelosComponent implements OnInit {
 
   onDestinoChange(): void {
     this.actualizarDuracionAutomatica();
+  }
+
+  // 🟢 CAMBIO 2: Calcular automáticamente el precio de Primera Clase (+40% sobre Económico)
+  onPrecioEconomicoChange(): void {
+    const economico = Number(this.vueloForm.precioEconomico || 0);
+    this.vueloForm.precioPrimera = economico > 0 ? Math.round(economico * 1.4) : 0;
   }
 
   private actualizarDuracionAutomatica(): void {
@@ -213,6 +259,8 @@ export class GestionVuelosComponent implements OnInit {
       c.toLowerCase().includes(destinoRaw.toLowerCase())
     ) || destinoRaw;
 
+    const econ = Number(vuelo.precioEconomico ?? vAny.costoEconomico ?? 0);
+
     this.vueloForm = {
       id: vuelo.id || vAny.idVuelo || 0,
       codigo: vuelo.codigo || vAny.codigoVuelo || '',
@@ -221,8 +269,8 @@ export class GestionVuelosComponent implements OnInit {
       fecha: fechaFormateada as any,
       horaVuelo: vuelo.horaVuelo || vAny.hora_vuelo || '',
       duracionVuelo: vuelo.duracionVuelo || vAny.duracion || '',
-      precioEconomico: Number(vuelo.precioEconomico ?? vAny.costoEconomico ?? 0),
-      precioPrimera: Number(vuelo.precioPrimera ?? vAny.costoPrimera ?? 0),
+      precioEconomico: econ,
+      precioPrimera: econ > 0 ? Math.round(econ * 1.4) : Number(vuelo.precioPrimera ?? vAny.costoPrimera ?? 0),
       estado: vuelo.estado || vAny.estado_vuelo || 'Programado',
       reservasCount: Number(vuelo.reservasCount ?? vAny.reservasTotal ?? 0)
     };
@@ -282,7 +330,9 @@ export class GestionVuelosComponent implements OnInit {
   guardarVuelo(): void {
     this.mensajeErrorModal = '';
 
-    // 1. Campos obligatorios (el código se valida automáticamente)
+    // Asegurar que precioPrimera siempre sea 40% más que precioEconomico antes de validar y guardar
+    this.onPrecioEconomicoChange();
+
     if (
       !this.vueloForm.codigo || 
       !this.vueloForm.origen || 
@@ -300,7 +350,6 @@ export class GestionVuelosComponent implements OnInit {
 
     const codigoLimpio = this.vueloForm.codigo.trim();
 
-    // 2. Formateo estricto de Fecha (YYYY-MM-DD) y Hora (HH:mm)
     let fechaVueloStr = '';
     const rawFecha: any = this.vueloForm.fecha;
 
@@ -315,7 +364,6 @@ export class GestionVuelosComponent implements OnInit {
 
     const hora24h = this.convertirHoraA24h(this.vueloForm.horaVuelo);
 
-    // 3. Validación de Fechas
     const fechaVueloTime = new Date(`${fechaVueloStr}T${hora24h}:00`).getTime();
     const ahora = new Date().getTime();
     
@@ -337,7 +385,6 @@ export class GestionVuelosComponent implements OnInit {
 
     this.vueloForm.codigo = codigoLimpio;
 
-    // 4. Petición al Backend
     if (this.editando) {
       const payloadEditar = {
         codigo: this.vueloForm.codigo,
@@ -350,8 +397,6 @@ export class GestionVuelosComponent implements OnInit {
         precioPrimera: Number(this.vueloForm.precioPrimera),
         estado: this.vueloForm.estado
       };
-
-      console.log('>>> ENVIANDO PAYLOAD AL BACKEND:', payloadEditar);
 
       this.vuelosService.editarVuelo(this.vueloForm.id, payloadEditar as any).subscribe({
         next: () => {
@@ -375,6 +420,7 @@ export class GestionVuelosComponent implements OnInit {
       const { id, ...payloadNuevoVuelo } = this.vueloForm;
       payloadNuevoVuelo.fecha = fechaVueloStr as any;
       payloadNuevoVuelo.horaVuelo = hora24h;
+      payloadNuevoVuelo.precioPrimera = Math.round(Number(payloadNuevoVuelo.precioEconomico) * 1.4);
 
       this.vuelosService.crearVuelo(payloadNuevoVuelo as Vuelo).subscribe({
         next: () => {
