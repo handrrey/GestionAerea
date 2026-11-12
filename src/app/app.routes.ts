@@ -16,6 +16,7 @@ import { MisReservasComponent } from './modulos/usuario/mis-reservas/mis-reserva
 import { CarritoComponent } from './modulos/vuelos/carrito/carrito';
 import { AsignacionSillasComponent } from './modulos/vuelos/asignacion-sillas/asignacion-sillas'; 
 import { VuelosRealizadosComponent } from './modulos/administracion/vuelos-realizados/vuelos-realizados';
+import { CheckInComponent } from './modulos/vuelos/check-in/check-in';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -35,5 +36,6 @@ export const routes: Routes = [
   { path: 'carrito', component: CarritoComponent },
   { path: 'asignacion-sillas', component: AsignacionSillasComponent },
   { path: 'vuelos-realizados', component: VuelosRealizadosComponent },
+  { path: 'check-in', component: CheckInComponent },
   { path: '**', redirectTo: 'home' }
 ];

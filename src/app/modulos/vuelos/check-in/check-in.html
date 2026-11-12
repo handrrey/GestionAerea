@@ -1,0 +1,243 @@
+<div class="checkin-page">
+  <div class="checkin-card">
+    <div class="header-text">
+      <h1 class="title">Ejecución de Check-in</h1>
+      <p class="subtitle">Disponible únicamente para vuelos pagados dentro de las 48 horas previas a la salida</p>
+    </div>
+
+    <!-- Conmutador de Modalidades -->
+    <div class="mode-tabs">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="modalidad === 'RAPIDA'"
+        (click)="cambiarModalidad('RAPIDA')">
+        <span>⚡</span> Check-in Rápido (Manual)
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="modalidad === 'SISTEMA'"
+        (click)="cambiarModalidad('SISTEMA')">
+        <span>👤</span> Identificación en el Sistema
+      </button>
+    </div>
+
+    <!-- Alertas -->
+    <div class="alert-box alert-error" *ngIf="mensajeError">
+      ⚠️ {{ mensajeError }}
+    </div>
+
+    <div class="alert-box alert-success" *ngIf="mensajeExito">
+      ✅ {{ mensajeExito }}
+    </div>
+
+    <!-- Cargando -->
+    <div class="loading-box" *ngIf="cargandoInicial">
+      🔄 Verificando reservas elegibles para Check-in...
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- APARTADO 1: CHECK-IN RÁPIDO (LLENADO MANUAL)              -->
+    <!-- ========================================================= -->
+    <div *ngIf="!cargandoInicial && modalidad === 'RAPIDA'">
+      <div class="search-box">
+        <label for="res-code">Ingresa el Código de Reserva o Documento del Viajero</label>
+        <div class="input-group">
+          <input
+            type="text"
+            id="res-code"
+            [(ngModel)]="criterioBusqueda"
+            (keyup.enter)="buscarReservaManual()"
+            placeholder="Ej. CMP-GMRG7 o 1098765432">
+          <button
+            type="button"
+            class="btn-search"
+            [disabled]="buscando"
+            (click)="buscarReservaManual()">
+            {{ buscando ? 'BUSCANDO...' : 'BUSCAR RESERVA' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulario de validación manual si se encontró reserva elegible -->
+      <div class="passenger-card" *ngIf="reservaEncontrada">
+        <span class="autofill-badge manual-badge">✍️ VALIDACIÓN MANUAL</span>
+
+        <!-- Selector si hay más de un pasajero en la reserva -->
+        <div class="manual-inputs-grid" style="margin-bottom: 16px;">
+          <div class="form-field" *ngIf="reservaEncontrada.pasajeros.length > 1">
+            <label>SELECCIONA EL PASAJERO</label>
+            <select [(ngModel)]="pasajeroSeleccionadoIdx" (change)="onCambioPasajeroManual()">
+              <option *ngFor="let p of reservaEncontrada.pasajeros; let i = index" [ngValue]="i">
+                {{ p.nombreCompleto }} ({{ p.sillaActual }}) {{ p.checkinRealizado ? '✓' : '' }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label>TELÉFONO DE CONTACTO *</label>
+            <input type="text" [(ngModel)]="telefonoConfirmacion" placeholder="Ej. 3001234567">
+          </div>
+
+          <div class="form-field">
+            <label>CORREO PARA ENVÍO DE PASABORDO *</label>
+            <input type="email" [(ngModel)]="emailConfirmacion" placeholder="correo@ejemplo.com">
+          </div>
+        </div>
+
+        <div class="passenger-grid" *ngIf="pasajeroActivo">
+          <div class="data-item">
+            <label>PASAJERO</label>
+            <span>{{ pasajeroActivo.nombreCompleto }}</span>
+          </div>
+
+          <div class="data-item">
+            <label>DOCUMENTO (DNI)</label>
+            <span>{{ pasajeroActivo.documento }}</span>
+          </div>
+
+          <div class="data-item">
+            <label>VUELO CONFIRMADO</label>
+            <span>{{ reservaEncontrada.vueloCodigo }} ({{ reservaEncontrada.origen }} → {{ reservaEncontrada.destino }})</span>
+          </div>
+
+          <div class="data-item">
+            <label>FECHA Y HORA DE SALIDA</label>
+            <span>{{ reservaEncontrada.fechaSalida | date:'dd MMM yyyy' | uppercase }} | {{ reservaEncontrada.horaSalida }} HRS</span>
+          </div>
+
+          <div class="data-item">
+            <label>SILLA ASIGNADA</label>
+            <span class="highlight-seat">{{ pasajeroActivo.sillaActual }} ({{ pasajeroActivo.clase }})</span>
+          </div>
+
+          <div class="data-item">
+            <label>ESTADO DE ASISTENCIA</label>
+            <span [class.status-ok]="!pasajeroActivo.checkinRealizado" [class.status-done]="pasajeroActivo.checkinRealizado">
+              {{ pasajeroActivo.checkinRealizado ? 'Check-in ya realizado ✓' : 'Listo para confirmar (' + reservaEncontrada.horasRestantes + 'h restantes)' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- APARTADO 2: IDENTIFICACIÓN EN EL SISTEMA (AUTOCOMPLETADO) -->
+    <!-- ========================================================= -->
+    <div *ngIf="!cargandoInicial && modalidad === 'SISTEMA'">
+      <div class="empty-system-box" *ngIf="idUsuario && reservasUsuarioElegibles.length === 0">
+        <div class="empty-icon">🕒</div>
+        <h3>No tienes vuelos habilitados para Check-in en este momento</h3>
+        <p>Recuerda que solo aparecen aquí tus compras en estado <strong>Pagado</strong> cuya salida ocurra dentro de las próximas <strong>48 horas</strong>.</p>
+      </div>
+
+      <!-- Selector de vuelos elegibles del usuario -->
+      <div class="search-box" *ngIf="reservasUsuarioElegibles.length > 0">
+        <label>Tus Vuelos Pagados Disponibles para Check-in (Ventana 48h)</label>
+        <div class="vuelos-pills">
+          <button
+            type="button"
+            class="vuelo-pill"
+            *ngFor="let res of reservasUsuarioElegibles"
+            [class.selected]="reservaSistemaSeleccionada?.idReserva === res.idReserva"
+            (click)="seleccionarReservaSistema(res)">
+            <strong>{{ res.vueloCodigo }}</strong> • {{ res.origen }} → {{ res.destino }} ({{ res.codigo }})
+          </button>
+        </div>
+
+        <!-- Selector de pasajero si la compra tiene varios -->
+        <div *ngIf="reservaSistemaSeleccionada?.pasajeros?.length > 1" style="margin-top: 14px;">
+          <label>Selecciona el Pasajero de esta Reserva:</label>
+          <div class="vuelos-pills">
+            <button
+              type="button"
+              class="vuelo-pill"
+              *ngFor="let p of reservaSistemaSeleccionada.pasajeros; let i = index"
+              [class.selected]="pasajeroSeleccionadoIdx === i"
+              (click)="pasajeroSeleccionadoIdx = i">
+              👤 {{ p.nombreCompleto }} ({{ p.sillaActual }}) {{ p.checkinRealizado ? '✓' : '' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ficha de Datos Autocompletados desde el Sistema -->
+      <div class="passenger-card" *ngIf="reservaSistemaSeleccionada && pasajeroActivo">
+        <span class="autofill-badge">✓ DATOS AUTOCOMPLETADOS DEL SISTEMA</span>
+
+        <div class="passenger-grid">
+          <div class="data-item">
+            <label>PASAJERO REGISTRADO</label>
+            <span>{{ pasajeroActivo.nombreCompleto }}</span>
+          </div>
+
+          <div class="data-item">
+            <label>DOCUMENTO (DNI)</label>
+            <span>{{ pasajeroActivo.documento }}</span>
+          </div>
+
+          <div class="data-item">
+            <label>CORREO / TELÉFONO</label>
+            <span>{{ emailConfirmacion || 'Registrado' }} • {{ telefonoConfirmacion || '-' }}</span>
+          </div>
+
+          <div class="data-item">
+            <label>VUELO CONFIRMADO</label>
+            <span>{{ reservaSistemaSeleccionada.vueloCodigo }} ({{ reservaSistemaSeleccionada.origen }} → {{ reservaSistemaSeleccionada.destino }})</span>
+          </div>
+
+          <div class="data-item">
+            <label>FECHA Y HORA</label>
+            <span>{{ reservaSistemaSeleccionada.fechaSalida | date:'dd MMM yyyy' | uppercase }} | {{ reservaSistemaSeleccionada.horaSalida }} HRS</span>
+          </div>
+
+          <div class="data-item">
+            <label>SILLA ASIGNADA</label>
+            <span class="highlight-seat">{{ pasajeroActivo.sillaActual }} ({{ pasajeroActivo.clase }})</span>
+          </div>
+
+          <div class="data-item">
+            <label>ESTADO DE ASISTENCIA</label>
+            <span [class.status-ok]="!pasajeroActivo.checkinRealizado" [class.status-done]="pasajeroActivo.checkinRealizado">
+              {{ pasajeroActivo.checkinRealizado ? 'Check-in ya realizado ✓' : 'Listo para confirmar' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Términos y Botones de Acción -->
+    <ng-container *ngIf="reservaActiva && pasajeroActivo">
+      <div class="terms-box">
+        <input type="checkbox" id="terms" [(ngModel)]="aceptaTerminos">
+        <label for="terms">Declaro que la información de los viajeros es correcta y acepto las políticas de equipaje del vuelo.</label>
+      </div>
+
+      <div class="button-group">
+        <button type="button" class="btn-cancel" (click)="volverAMisReservas()">VOLVER</button>
+
+        <button
+          type="button"
+          class="btn-confirm"
+          *ngIf="!pasajeroActivo.checkinRealizado"
+          [disabled]="procesandoCheckin"
+          (click)="confirmarCheckIn()">
+          {{ procesandoCheckin ? 'PROCESANDO...' : 'CONFIRMAR Y GENERAR PASABORDO (PDF)' }}
+        </button>
+
+        <button
+          type="button"
+          class="btn-confirm btn-pdf-ready"
+          *ngIf="pasajeroActivo.checkinRealizado"
+          (click)="pasabordoGenerado ? descargarPasabordoPDF(pasabordoGenerado) : confirmarCheckIn()">
+          📄 DESCARGAR PASABORDO (PDF)
+        </button>
+      </div>
+    </ng-container>
+
+    <div class="button-group" *ngIf="!reservaActiva" style="margin-top: 10px;">
+      <button type="button" class="btn-cancel" (click)="volverAMisReservas()">VOLVER A MIS VUELOS</button>
+    </div>
+  </div>
+</div>

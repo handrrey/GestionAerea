@@ -103,24 +103,31 @@
           <div class="action-box flex gap-2 align-items-center">
             <!-- Botón Pagar Ahora / Añadir al Carrito -->
             <button class="btn-pay-now" 
-                    *ngIf="r.estado === 'RESERVADO' || r.estado === 'PENDIENTE'" 
-                    (click)="pagarReserva(r)">
+              *ngIf="r.estado === 'RESERVADO' || r.estado === 'PENDIENTE'" 
+              (click)="pagarReserva(r)">
               🛒 Pagar Ahora
             </button>
 
             <!-- Botón Cancelar Reserva -->
             <button class="btn-cancelar" 
-                    *ngIf="r.estado === 'RESERVADO' || r.estado === 'PENDIENTE'" 
-                    (click)="cancelarReserva(r.idReserva)">
+              *ngIf="r.estado === 'RESERVADO' || r.estado === 'PENDIENTE'" 
+              (click)="cancelarReserva(r.idReserva)">
               Cancelar Reserva 🚫
             </button>
 
             <!-- Botón Cambiar Sillas si ya está PAGADO -->
             <button class="btn-pay-now" 
-                    *ngIf="r.estado === 'PAGADO'" 
-                    (click)="irAAsignarSillas(r)"
-                    style="background-color: #763CB4;">
+              *ngIf="r.estado === 'PAGADO'" 
+              (click)="irAAsignarSillas(r)"
+              style="background-color: #763CB4;">
               💺 Gestionar Sillas
+            </button>
+
+            <button class="btn-pay-now" 
+              *ngIf="puedeHacerCheckIn(r)" 
+              (click)="irACheckIn(r)"
+              style="background-color: #15803D;">
+              ✅ Hacer Check-in
             </button>
 
             <span class="resolved-tag" *ngIf="r.estado === 'CANCELADO'">Reserva Anulada</span>

@@ -1,7 +1,10 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { CompraReservaService } from '../../../nucleo/servicios/compra-reserva';
+import { VuelosService } from '../../../nucleo/servicios/vuelos';
 
 @Component({
   selector: 'app-mis-reservas',
@@ -14,6 +17,7 @@ export class MisReservasComponent implements OnInit {
 
   private router = inject(Router);
   private reservaService = inject(CompraReservaService);
+  private vuelosService = inject(VuelosService);
   private cdr = inject(ChangeDetectorRef);
 
   idUsuario: number = 0;
@@ -59,26 +63,45 @@ export class MisReservasComponent implements OnInit {
       mapaAsientosLocal = {};
     }
 
-    this.reservaService.obtenerReservasPorUsuario(this.idUsuario).subscribe({
-      next: (res: any) => {
-        const lista = Array.isArray(res) ? res : (res?.reservas || []);
+    forkJoin({
+      reservasRes: this.reservaService.obtenerReservasPorUsuario(this.idUsuario),
+      vuelosRes: this.vuelosService.obtenerVuelos().pipe(catchError(() => of([])))
+    }).subscribe({
+      next: ({ reservasRes, vuelosRes }) => {
+        const lista = Array.isArray(reservasRes) ? reservasRes : (reservasRes?.reservas || []);
+        const listaVuelos = Array.isArray(vuelosRes) ? vuelosRes : [];
+
+        // Mapa indexado por idVuelo con los datos reales de la tabla vuelos
+        const mapaVuelosBackend: Record<number, any> = {};
+        for (const vueloItem of listaVuelos as any[]) {
+          const vid = Number(vueloItem.idVuelo || vueloItem.id_vuelo || vueloItem.id || 0);
+          if (vid > 0) {
+            mapaVuelosBackend[vid] = vueloItem;
+          }
+        }
 
         this.reservas = lista.map((r: any) => {
           const idReservaReal = Number(r.id_reserva || r.idReserva || r.id || 0);
           const idVueloReal = Number(r.id_vuelo || r.idVuelo || r.vuelo?.id_vuelo || r.vuelo?.idVuelo || 0);
-          const v = r.vuelo || mapaVuelosLocal[idVueloReal] || {};
+
+          // Combinar caché local, catálogo real de vuelos y relación r.vuelo
+          const v = {
+            ...(mapaVuelosLocal[idVueloReal] || {}),
+            ...(mapaVuelosBackend[idVueloReal] || {}),
+            ...(r.vuelo || {})
+          };
+
           const montoTotal = Number(r.monto_total || r.montoTotal || 0);
           const claseNorm = String(r.clase || 'ECONOMICA').toUpperCase();
 
-          // 🟢 1. Calcular el número REAL de pasajeros
+          // 1. Calcular el número REAL de pasajeros
           const listaPasajeros = Array.isArray(r.pasajeros) ? r.pasajeros : [];
           let cantidadReal = Number(r.cantidad_pasajeros || r.cantidadPasajeros || 0);
 
           if (listaPasajeros.length > 0) {
             cantidadReal = listaPasajeros.length;
           } else if (cantidadReal <= 1 && montoTotal > 0) {
-            // Si la BD guardó 1 por defecto en compra directa, deducir por el monto pagado vs precio base
-            const precioUnitarioBase = Number(v.precioBase || v.precioEconomico || v.costoEconomico || 0);
+            const precioUnitarioBase = Number(v.precioBase || v.precioEconomico || v.costoEconomico || v.costo_economico || 0);
             if (precioUnitarioBase > 0) {
               const factorClase = claseNorm.includes('PRIMERA') ? 1.4 : 1.0;
               const estimados = Math.round(montoTotal / (precioUnitarioBase * factorClase));
@@ -89,9 +112,20 @@ export class MisReservasComponent implements OnInit {
           }
           if (cantidadReal < 1) cantidadReal = 1;
 
-          // 🟢 2. Extraer o construir los asientos reservados
+          // 2. Extraer o construir los asientos reservados
           const asientosGuardados = mapaAsientosLocal[idReservaReal] || mapaAsientosLocal[r.codigo_reserva || r.codigoReserva];
           const asientosLista = this.extraerAsientos(r, listaPasajeros, asientosGuardados, cantidadReal, claseNorm);
+
+          // 3. Construir fechas ISO completas combinando fecha + hora reales del vuelo
+          const fechaSalidaISO = this.combinarFechaHora(
+            v.fechaVuelo || v.fecha_vuelo || v.fechaSalida || v.fecha_salida,
+            v.horaVuelo || v.hora_vuelo
+          );
+
+          const fechaLlegadaISO = this.combinarFechaHora(
+            v.fechaLlegada || v.fecha_llegada || v.fechaVuelo || v.fecha_vuelo,
+            v.horaLlegada || v.hora_llegada
+          );
 
           return {
             idReserva: idReservaReal,
@@ -105,12 +139,12 @@ export class MisReservasComponent implements OnInit {
             clase: claseNorm,
             pasajeros: listaPasajeros,
             asientos: asientosLista,
-            vueloCodigo: v.codigo || v.codigoVuelo || (idVueloReal ? `AV-${idVueloReal}` : 'AV-800'),
-            origen: v.origen || v.ciudadOrigen || 'Medellín (MDE)',
-            destino: v.destino || v.ciudadDestino || 'Cali (CLO)',
-            duracion: v.duracion || '02h 30m',
-            fechaSalida: v.fechaSalida || v.fecha_salida || '2027-02-20T16:40:00',
-            fechaLlegada: v.fechaLlegada || v.fecha_llegada || '2027-02-20T19:10:00'
+            vueloCodigo: v.codigoVuelo || v.codigo_vuelo || v.codigo || (idVueloReal ? `GA-${idVueloReal}` : 'GA-000'),
+            origen: v.origen || v.ciudadOrigen || '-',
+            destino: v.destino || v.ciudadDestino || '-',
+            duracion: v.duracion || v.duracionVuelo || '-',
+            fechaSalida: fechaSalidaISO,
+            fechaLlegada: fechaLlegadaISO
           };
         });
 
@@ -127,8 +161,29 @@ export class MisReservasComponent implements OnInit {
   }
 
   /**
-   * Extrae los códigos de silla reales desde el backend, los pasajeros o asigna los preliminares
+   * Une fecha ("YYYY-MM-DD") y hora ("HH:mm") en un string ISO válido para el DatePipe de Angular
    */
+  private combinarFechaHora(fechaRaw: any, horaRaw: any): string {
+    if (!fechaRaw) return new Date().toISOString();
+
+    // Extraer siempre solo la parte YYYY-MM-DD aunque venga con T00:00:00.000Z
+    const soloFecha = String(fechaRaw).split('T')[0].trim();
+
+    // Si hay hora explícita en el vuelo (ej. "14:30" o "14:30:00"), usarla siempre
+    if (horaRaw && String(horaRaw).trim()) {
+      const horaLimpia = String(horaRaw).trim().slice(0, 5);
+      return `${soloFecha}T${horaLimpia}:00`;
+    }
+
+    // Si no vino hora aparte, conservar la hora que traía el string ISO si existía
+    const fechaStr = String(fechaRaw);
+    if (fechaStr.includes('T') && fechaStr.length > 11) {
+      return fechaStr;
+    }
+
+    return `${soloFecha}T00:00:00`;
+  }
+
   private extraerAsientos(
     reservaRaw: any,
     pasajeros: any[],
@@ -136,17 +191,14 @@ export class MisReservasComponent implements OnInit {
     cantidadPasajeros: number,
     clase: string
   ): string[] {
-    // 1. Si hay caché local actualizado desde asignacion-sillas
     if (Array.isArray(asientosCache) && asientosCache.length > 0) {
       return asientosCache;
     }
 
-    // 2. Si el backend trae arreglo de sillas en la reserva
     if (Array.isArray(reservaRaw.sillas) && reservaRaw.sillas.length > 0) {
       return reservaRaw.sillas.map((s: any) => String(s.numero_silla || s.numeroSilla || s.codigo || s));
     }
 
-    // 3. Si los pasajeros traen propiedad de silla asignada
     const sillasDesdePasajeros = pasajeros
       .map((p: any) => p.sillaActual || p.silla || p.numeroSilla || p.numero_silla)
       .filter((s: any) => Boolean(s));
@@ -155,7 +207,6 @@ export class MisReservasComponent implements OnInit {
       return sillasDesdePasajeros;
     }
 
-    // 4. Sillas preliminares asignadas automáticamente según clase y cantidad de pasajeros
     const letras = ['A', 'B', 'C', 'D', 'E', 'F'];
     const filaBase = clase.includes('PRIMERA') ? 1 : 6;
     const preliminares: string[] = [];
@@ -273,5 +324,27 @@ export class MisReservasComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  puedeHacerCheckIn(r: any): boolean {
+    if (r.estado !== 'PAGADO') return false;
+    if (!r.fechaSalida) return false;
+
+    const ahora = new Date().getTime();
+    const salida = new Date(r.fechaSalida).getTime();
+
+    if (isNaN(salida)) return false;
+
+    const diferenciaMs = salida - ahora;
+    const cuarentaYOchoHorasMs = 48 * 60 * 60 * 1000;
+
+    // Habilitado solo si falta entre 0 y 48 horas para el vuelo
+    return diferenciaMs > 0 && diferenciaMs <= cuarentaYOchoHorasMs;
+  }
+
+  irACheckIn(r: any): void {
+    // Guarda el contexto de la reserva y navega a tu módulo de check-in
+    localStorage.setItem('app_reserva_checkin', JSON.stringify(r));
+    this.router.navigate(['/check-in'], { state: { reserva: r } });
   }
 }
