@@ -36,4 +36,8 @@ export class CompraReservaService {
   cancelarReserva(idReserva: number): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/${idReserva}`, {});
   }
+
+  realizarCheckIn(idPasajero: number, payload: { idReserva: number; telefono?: string; email?: string; checkinRealizado: boolean }): Observable<any> {
+  return this.http.patch(`${this.apiUrl}/check-in/${idPasajero}`, payload);
+}
 }

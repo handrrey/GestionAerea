@@ -49,6 +49,13 @@
           ℹ️ La contraseña provisional de acceso inicial para el nuevo usuario será su <strong>Número de Documento (CC) + Nombre de Usuario</strong>.
         </p>
 
+        <!-- Aviso de error / Cédula duplicada -->
+        <div
+          *ngIf="mensajeErrorFormulario"
+          style="background-color: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; font-weight: 600;">
+          ⚠️ {{ mensajeErrorFormulario }}
+        </div>
+
         <form (ngSubmit)="crearAdmin()" class="form-grid-modal">
           
           <div class="form-group">

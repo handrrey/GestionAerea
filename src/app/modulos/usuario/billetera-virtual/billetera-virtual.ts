@@ -86,24 +86,41 @@ cargarHistorial(): void {
       this.historial = lista.map((h: any) => {
         const descripcion = h.info_historial || h.concepto || h.descripcion || 'Movimiento de Billetera';
         const fechaRaw = h.fecha_transaccion || h.fecha || '';
+        const descLower = descripcion.toLowerCase();
 
-        let montoCalculado = Number(h.monto || h.valor || 0);
+        let montoCalculado = Math.abs(Number(h.monto || h.valor || 0));
 
-        const esRecarga = descripcion.toLowerCase().includes('incremento') || 
-                          descripcion.toLowerCase().includes('recarga') || 
-                          descripcion.toLowerCase().includes('añad');
-        
-        const esCompra = descripcion.toLowerCase().includes('compra') || 
-                         descripcion.toLowerCase().includes('pago') || 
-                         descripcion.toLowerCase().includes('descuento');
+        const esRecarga = descLower.includes('incremento') ||
+                          descLower.includes('recarga') ||
+                          descLower.includes('añad');
 
-        // 🟢 Si es un incremento/recarga y el monto viene en 0 de la BD,
-        // extraemos el valor que está guardado dentro del texto descriptivo
-        if (esRecarga && montoCalculado === 0) {
-          const numerosEncontrados = descripcion.match(/\d+/g);
-          if (numerosEncontrados && numerosEncontrados.length > 0) {
-            // Toma el número extraído de la descripción
-            montoCalculado = parseInt(numerosEncontrados[numerosEncontrados.length - 1], 10);
+        const esCompra = descLower.includes('compra') ||
+                         descLower.includes('pago') ||
+                         descLower.includes('descuento');
+
+        if (montoCalculado === 0) {
+          if (esCompra) {
+            // En compras el texto dice: "... por 980000. Saldo restante: 10000"
+            const matchCompra = descripcion.match(/por\s+(\d+)/i);
+            if (matchCompra && matchCompra[1]) {
+              montoCalculado = parseInt(matchCompra[1], 10);
+            } else {
+              const numerosEncontrados = descripcion.match(/\d+/g);
+              if (numerosEncontrados && numerosEncontrados.length > 0) {
+                montoCalculado = parseInt(numerosEncontrados[0], 10);
+              }
+            }
+          } else {
+            // En recargas o reembolsos toma el monto del texto
+            const matchPor = descripcion.match(/por\s+(\d+)/i);
+            if (matchPor && matchPor[1]) {
+              montoCalculado = parseInt(matchPor[1], 10);
+            } else {
+              const numerosEncontrados = descripcion.match(/\d+/g);
+              if (numerosEncontrados && numerosEncontrados.length > 0) {
+                montoCalculado = parseInt(numerosEncontrados[numerosEncontrados.length - 1], 10);
+              }
+            }
           }
         }
 

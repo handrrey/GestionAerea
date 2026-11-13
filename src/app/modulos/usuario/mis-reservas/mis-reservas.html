@@ -96,11 +96,11 @@
         <!-- Pie de Tarjeta (Monto Total y Botones de Acción) -->
         <div class="card-footer">
           <div class="price-box">
-            <span class="price-label">Monto Total a Pagar</span>
+            <span class="price-label">{{ r.estado === 'PAGADO' ? 'Monto Pagado' : 'Monto Total a Pagar' }}</span>
             <div class="price-amount">${{ r.monto | number }} COP</div>
           </div>
 
-          <div class="action-box flex gap-2 align-items-center">
+          <div class="action-box flex gap-2 align-items-center" style="flex-wrap: wrap;">
             <!-- Botón Pagar Ahora / Añadir al Carrito -->
             <button class="btn-pay-now" 
               *ngIf="r.estado === 'RESERVADO' || r.estado === 'PENDIENTE'" 
@@ -108,7 +108,7 @@
               🛒 Pagar Ahora
             </button>
 
-            <!-- Botón Cancelar Reserva -->
+            <!-- Botón Cancelar Reserva (No pagada) -->
             <button class="btn-cancelar" 
               *ngIf="r.estado === 'RESERVADO' || r.estado === 'PENDIENTE'" 
               (click)="cancelarReserva(r.idReserva)">
@@ -123,6 +123,7 @@
               💺 Gestionar Sillas
             </button>
 
+            <!-- Botón Hacer Check-in (Solo 48h antes del vuelo) -->
             <button class="btn-pay-now" 
               *ngIf="puedeHacerCheckIn(r)" 
               (click)="irACheckIn(r)"
@@ -130,8 +131,15 @@
               ✅ Hacer Check-in
             </button>
 
-            <span class="resolved-tag" *ngIf="r.estado === 'CANCELADO'">Reserva Anulada</span>
-            <span class="resolved-tag pagado" *ngIf="r.estado === 'PAGADO'">Reserva Pagada ✓</span>
+            <!-- Botón Cancelar Vuelo Pagado (> 1h antes del vuelo con reembolso) -->
+            <button class="btn-cancelar" 
+              *ngIf="puedeCancelarVueloPagado(r)" 
+              (click)="cancelarVueloPagado(r)">
+              Cancelar Vuelo 💸
+            </button>
+
+            <span class="resolved-tag" *ngIf="r.estado === 'CANCELADO'">Vuelo / Reserva Anulada</span>
+            <span class="resolved-tag pagado" *ngIf="r.estado === 'PAGADO'">Vuelo Pagado ✓</span>
           </div>
         </div>
 

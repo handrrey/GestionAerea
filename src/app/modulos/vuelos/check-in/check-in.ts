@@ -374,9 +374,9 @@ export class CheckInComponent implements OnInit {
     };
 
     // Intentar confirmar en backend (PATCH/POST) y continuar con la generación del pasabordo
-    this.http.patch(`${this.apiUrl}/compra-reserva/checkin/${pasajero.idPasajero}`, payloadCheckin).pipe(
+    this.http.patch(`${this.apiUrl}/check-in/${pasajero.idPasajero}`, payloadCheckin).pipe(
       catchError(() =>
-        this.http.post(`${this.apiUrl}/checkin`, payloadCheckin).pipe(catchError(() => of({ ok: true })))
+        this.http.post(`${this.apiUrl}/check-in`, payloadCheckin).pipe(catchError(() => of({ ok: true })))
       )
     ).subscribe({
       next: () => {

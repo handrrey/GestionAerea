@@ -85,14 +85,14 @@
           </div>
 
           <!-- 🟢 Monto alineado a la derecha en VERDE para RECARGA y ROJO para COMPRA -->
-          <div class="item-monto" 
-               *ngIf="item.monto > 0" 
-                [class.positive]="item.tipo === 'RECARGA'" 
-                [class.negative]="item.tipo === 'COMPRA'">
-            <span *ngIf="item.tipo === 'RECARGA'">+ </span>
+          <div class="item-monto"
+            *ngIf="item.monto > 0"
+            [class.positive]="item.tipo === 'RECARGA' || item.tipo === 'REEMBOLSO'"
+            [class.negative]="item.tipo === 'COMPRA'">
+            <span *ngIf="item.tipo === 'RECARGA' || item.tipo === 'REEMBOLSO'">+ </span>
             <span *ngIf="item.tipo === 'COMPRA'">- </span>
             ${{ item.monto | number }} COP
-          </div>
+          </div>  
 
         </div>
       </div>

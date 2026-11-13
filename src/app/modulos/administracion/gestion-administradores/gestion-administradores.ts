@@ -2,6 +2,9 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { AutenticacionService } from '../../../nucleo/servicios/autenticacion';
 import { Usuario } from '../../../nucleo/modelos/usuario.model';
 
@@ -16,6 +19,9 @@ export class GestionAdministradoresComponent implements OnInit {
   administradores: Usuario[] = [];
   mostrarFormulario: boolean = false;
   usuarioActual: Usuario | null = null;
+  mensajeErrorFormulario: string = '';
+
+  private apiUrl = 'http://localhost:3000/appV1';
 
   nuevoAdmin: Partial<Usuario> = {
     cc: 0,
@@ -26,6 +32,7 @@ export class GestionAdministradoresComponent implements OnInit {
 
   constructor(
     private autenticacionService: AutenticacionService,
+    private http: HttpClient,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
@@ -45,7 +52,6 @@ export class GestionAdministradoresComponent implements OnInit {
   cargarAdministradores(): void {
     this.autenticacionService.obtenerAdministradores().subscribe({
       next: (listaAdmins) => {
-        console.log('Datos reales del backend:', listaAdmins);
         this.administradores = listaAdmins;
         this.cdr.detectChanges();
       },
@@ -57,76 +63,115 @@ export class GestionAdministradoresComponent implements OnInit {
 
   toggleFormulario(): void {
     this.mostrarFormulario = !this.mostrarFormulario;
+    this.mensajeErrorFormulario = '';
     if (!this.mostrarFormulario) {
       this.limpiarFormulario();
     }
   }
 
   crearAdmin(): void {
+    this.mensajeErrorFormulario = '';
+
     const ccStr = String(this.nuevoAdmin.cc || '').trim();
     const usuarioLimpio = (this.nuevoAdmin.usuario || '').trim();
     const emailLimpio = (this.nuevoAdmin.email || '').trim();
 
     // 1. Campos obligatorios
     if (!ccStr || ccStr === '0' || usuarioLimpio === '' || emailLimpio === '') {
-      alert('Por favor completa todos los campos requeridos.');
+      this.mensajeErrorFormulario = 'Por favor completa todos los campos requeridos.';
       return;
     }
 
     // 2. Validación de Cédula / Documento (Longitud de 8 a 10 dígitos)
     const regexCedula = /^\d{8,10}$/;
     if (!regexCedula.test(ccStr)) {
-      alert('Cédula inválida. Longitud de 8 a 10 dígitos.');
+      this.mensajeErrorFormulario = 'Cédula inválida. Debe tener entre 8 y 10 dígitos.';
       return;
     }
 
-    // 3. Validación de Correo Electrónico
+    // 3. Validación de Nombre de Usuario (letras, números y guion bajo _)
+    const regexUsuario = /^[a-zA-Z0-9_]+$/;
+    if (!regexUsuario.test(usuarioLimpio)) {
+      this.mensajeErrorFormulario = 'El nombre de usuario solo puede contener letras, números y guion bajo (_), sin espacios.';
+      return;
+    }
+
+    // 4. Validación de Correo Electrónico
     const regexEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!regexEmail.test(emailLimpio)) {
-      alert('Correo electrónico inválido.');
+      this.mensajeErrorFormulario = 'Correo electrónico inválido.';
       return;
     }
 
-    if (usuarioLimpio.includes(' ')) {
-      alert('El nombre de usuario no puede contener espacios.');
-      return;
-    }
-
-    // 4. Construcción de la contraseña provisional (Documento + Usuario)
+    // 5. Construcción de la contraseña provisional (Documento + Usuario)
     const claveProvisional = `${ccStr}${usuarioLimpio}`;
 
-    // Validación de seguridad para la contraseña antes de enviar al backend
     if (claveProvisional.length < 8) {
-      alert('La combinación de Cédula y Nombre de Usuario genera una contraseña demasiado corta. Debe sumar al menos 8 caracteres.');
+      this.mensajeErrorFormulario = 'La combinación de Cédula y Nombre de Usuario debe sumar al menos 8 caracteres.';
       return;
     }
 
-    const payloadAdmin: Partial<Usuario> = {
-      cc: Number(ccStr),
-      usuario: usuarioLimpio,
-      email: emailLimpio,
-      password: claveProvisional,
-      rol: 'ADMIN'
-    };
+    // 6. Verificar primero en los administradores cargados localmente
+    const adminExistente = this.administradores.find(
+      (a: any) => String(a.cc || a.documento || '').trim() === ccStr
+    );
+    if (adminExistente) {
+      const rolEncontrado = String(adminExistente.rol || 'ADMIN').toUpperCase();
+      this.mensajeErrorFormulario = `Cédula ${ccStr} ya pertenece a un usuario ${rolEncontrado}.`;
+      alert(this.mensajeErrorFormulario);
+      return;
+    }
 
-    // 5. Petición HTTP al backend
-    this.autenticacionService.crearAdministrador(payloadAdmin as Usuario).subscribe({
-      next: () => {
-        alert(`Administrador creado exitosamente. Su contraseña inicial es: ${claveProvisional}`);
-        this.limpiarFormulario();
-        this.mostrarFormulario = false;
-        this.cargarAdministradores();
-      },
-      error: (err) => {
-        console.error('Error al crear administrador:', err);
-        const msj = err.error?.message;
-        const textoError = Array.isArray(msj) ? msj[0] : (msj || 'El nombre de usuario o correo ya existe.');
-        alert(`Error: ${textoError}`);
+    // 7. Consultar todos los usuarios del sistema (CLIENTE / ADMIN / ROOT) para validar CC duplicada
+    this.http.get<any>(`${this.apiUrl}/usuarios`).pipe(
+      catchError(() => this.http.get<any>(`${this.apiUrl}/auth/usuarios`).pipe(catchError(() => of([]))))
+    ).subscribe((resUsuarios: any) => {
+      const listaUsuarios = Array.isArray(resUsuarios)
+        ? resUsuarios
+        : (resUsuarios?.usuarios || resUsuarios?.data || []);
+
+      const usuarioConMismaCC = listaUsuarios.find(
+        (u: any) => String(u.cc || u.documento || u.dni || '').trim() === ccStr
+      );
+
+      if (usuarioConMismaCC) {
+        const rolEncontrado = String(usuarioConMismaCC.rol || 'CLIENTE').toUpperCase();
+        this.mensajeErrorFormulario = `Cédula ${ccStr} ya pertenece a un usuario ${rolEncontrado}.`;
+        alert(this.mensajeErrorFormulario);
+        this.cdr.detectChanges();
+        return;
       }
+
+      // 8. Si la cédula está libre, enviar petición de creación al backend
+      const payloadAdmin: Partial<Usuario> = {
+        cc: Number(ccStr),
+        usuario: usuarioLimpio,
+        email: emailLimpio,
+        password: claveProvisional,
+        rol: 'ADMIN'
+      };
+
+      this.autenticacionService.crearAdministrador(payloadAdmin as Usuario).subscribe({
+        next: () => {
+          alert(`Administrador creado exitosamente. Su contraseña inicial es: ${claveProvisional}`);
+          this.limpiarFormulario();
+          this.mostrarFormulario = false;
+          this.cargarAdministradores();
+        },
+        error: (err) => {
+          console.error('Error al crear administrador:', err);
+          const msj = err.error?.message;
+          const textoError = Array.isArray(msj) ? msj[0] : (msj || 'El nombre de usuario, cédula o correo ya existe.');
+          this.mensajeErrorFormulario = textoError;
+          alert(`Error: ${textoError}`);
+          this.cdr.detectChanges();
+        }
+      });
     });
   }
 
   limpiarFormulario(): void {
+    this.mensajeErrorFormulario = '';
     this.nuevoAdmin = {
       cc: 0,
       usuario: '',
