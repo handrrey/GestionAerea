@@ -142,7 +142,7 @@ export class RegistroComponent implements OnInit {
         }
 
         if (err.status === 500 || textoError.includes('internal server error')) {
-          this.mensajeError = 'Error del servidor: Es probable que el nombre de usuario o correo ya estén en uso.';
+          this.mensajeError = 'Error del servidor: Es probable que el nombre de usuario, correo o cedula ya estén en uso.';
         }
         else if (textoError.includes('email') || textoError.includes('correo')) {
           this.mensajeError = 'Correo electronico invalido.';
