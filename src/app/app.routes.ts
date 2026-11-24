@@ -9,7 +9,6 @@ import { GestionAdministradoresComponent } from './modulos/administracion/gestio
 import { GestionVuelosComponent } from './modulos/administracion/gestion-vuelos/gestion-vuelos';
 import { PerfilAdminComponent } from './modulos/administracion/perfil-admin/perfil-admin';
 import { BuscarVuelosParametrizadosComponent } from './modulos/usuario/buscar-vuelos-parametrizados/buscar-vuelos-parametrizados';
-import { VuelosDisponiblesComponent } from './modulos/usuario/vuelos-disponibles/vuelos-disponibles';
 import { BilleteraVirtualComponent } from './modulos/usuario/billetera-virtual/billetera-virtual';
 import { CompraReservaComponent } from './modulos/vuelos/compra-reserva/compra-reserva';
 import { MisReservasComponent } from './modulos/usuario/mis-reservas/mis-reservas';
@@ -29,7 +28,6 @@ export const routes: Routes = [
   { path: 'gestion-vuelos', component: GestionVuelosComponent },
   { path: 'perfil-admin', component: PerfilAdminComponent },
   { path: 'buscar-vuelos-parametrizados', component: BuscarVuelosParametrizadosComponent },
-  { path: 'vuelos-disponibles', component: VuelosDisponiblesComponent },
   { path: 'billetera-virtual', component: BilleteraVirtualComponent },
   { path: 'compra-reserva', component: CompraReservaComponent },
   { path: 'mis-reservas', component: MisReservasComponent },
