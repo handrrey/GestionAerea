@@ -15,7 +15,7 @@
       ⚠️ {{ mensajeError }}
     </div>
 
-    <!-- Tarjeta Morada de Saldo (Con un SOLO botón principal) -->
+    <!-- Tarjeta Morada de Saldo -->
     <div class="balance-card">
       <span class="balance-label">SALDO DISPONIBLE EN CUENTA</span>
       <h2 class="balance-amount">${{ saldo | number }} COP</h2>
@@ -84,7 +84,6 @@
             <p class="item-meta">{{ item.fecha }} | {{ item.referencia }}</p>
           </div>
 
-          <!-- 🟢 Monto alineado a la derecha en VERDE para RECARGA y ROJO para COMPRA -->
           <div class="item-monto"
             *ngIf="item.monto > 0"
             [class.positive]="item.tipo === 'RECARGA' || item.tipo === 'REEMBOLSO'"
@@ -135,7 +134,18 @@
 
     <div class="form-group">
       <label>Número de Tarjeta</label>
-      <input type="text" [(ngModel)]="nuevaTarjeta.numeroTarjeta" placeholder="1234 5678 9012 3456" maxlength="16">
+      <input 
+        type="text" 
+        [(ngModel)]="nuevaTarjeta.numeroTarjeta" 
+        (ngModelChange)="alCambiarNumeroTarjeta()"
+        placeholder="4532015112830366" 
+        maxlength="16">
+      <small *ngIf="errorFranquicia" style="color: #dc2626; font-weight: 600; display: block; margin-top: 4px;">
+        ⚠️ {{ errorFranquicia }}
+      </small>
+      <small *ngIf="franquiciaDetectada" style="color: #16a34a; font-weight: 600; display: block; margin-top: 4px;">
+        ✓ Franquicia detectada: {{ franquiciaDetectada }}
+      </small>
     </div>
 
     <div class="form-group">
@@ -147,12 +157,13 @@
     </div>
 
     <div class="form-group">
-      <label>Franquicia</label>
-      <select [(ngModel)]="nuevaTarjeta.franquicia">
-        <option value="Visa">Visa</option>
-        <option value="Mastercard">Mastercard</option>
-        <option value="AMEX">American Express</option>
-      </select>
+      <label>Franquicia (Detección automática)</label>
+      <input 
+        type="text" 
+        [value]="franquiciaDetectada || (errorFranquicia ? 'Franquicia no reconocida' : 'Ingresa el número de tarjeta...')" 
+        disabled
+        style="background-color: #f3f4f6; cursor: not-allowed; font-weight: 600;"
+        [style.color]="errorFranquicia ? '#dc2626' : (franquiciaDetectada ? '#521E89' : '#6b7280')">
     </div>
 
     <div class="form-group">
@@ -162,7 +173,12 @@
 
     <div class="modal-buttons">
       <button class="btn-cancel" (click)="mostrarModalAgregarTarjeta = false">Cancelar</button>
-      <button class="btn-confirm" (click)="guardarTarjeta()">Guardar Tarjeta</button>
+      <button 
+        class="btn-confirm" 
+        (click)="guardarTarjeta()" 
+        [disabled]="!franquiciaDetectada || !!errorFranquicia">
+        Guardar Tarjeta
+      </button>
     </div>
   </div>
 </div>
@@ -175,7 +191,6 @@
     <div class="cards-list">
       <div class="card-row" *ngFor="let t of tarjetas">
         <span>💳 {{ t.franquicia }} **** {{ ((t.numeroTarjeta) || '').slice(-4) }}</span>
-        <!-- Pass the entire 't' object -->
         <button class="btn-delete" (click)="eliminarTarjeta(t)">Eliminar 🗑️</button>
       </div>
       <p *ngIf="tarjetas.length === 0" style="font-size: 13px; color: #763CB4;">No tienes tarjetas asociadas para eliminar.</p>

@@ -42,9 +42,12 @@ export class BilleteraVirtualComponent implements OnInit {
   nuevaTarjeta: Omit<Tarjeta, 'idTarjeta' | 'idBilletera'> = {
     numeroTarjeta: '',
     tipoTarjeta: 'Crédito',
-    franquicia: 'Visa',
+    franquicia: '',
     fechaExpiracion: ''
   };
+
+  franquiciaDetectada: string = '';
+  errorFranquicia: string = '';
 
   ngOnInit(): void {
     this.obtenerUsuarioAutenticado();
@@ -56,10 +59,97 @@ export class BilleteraVirtualComponent implements OnInit {
   }
 
   abrirModalAgregarTarjeta(): void {
+    this.mensajeError = '';
+    this.mensajeExito = '';
+    this.nuevaTarjeta = {
+      numeroTarjeta: '',
+      tipoTarjeta: 'Crédito',
+      franquicia: '',
+      fechaExpiracion: ''
+    };
+    this.franquiciaDetectada = '';
+    this.errorFranquicia = '';
     this.mostrarModalAgregarTarjeta = true;
   }
 
-// Método para obtener el ID real del usuario logueado en la aplicación
+  /**
+   * Detecta automáticamente la franquicia según los dígitos iniciales ingresados
+   */
+  detectarFranquiciaPorNumero(numeroRaw: string): string {
+    const num = String(numeroRaw || '').replace(/\D/g, '');
+    if (!num) return '';
+
+    // 1. Visa: Comienza por 4
+    if (num.startsWith('4')) {
+      return 'Visa';
+    }
+
+    // 2. American Express: 34 o 37
+    if (/^3[47]/.test(num)) {
+      return 'American Express';
+    }
+
+    // 3. Diners Club: 300-305, 36 o 38
+    if (/^(30[0-5]|36|38)/.test(num)) {
+      return 'Diners Club';
+    }
+
+    // 4. Maestro: 50, 56-58 o 67 (evaluado antes de Mastercard y Discover)
+    if (/^(50|5[6-8]|67)/.test(num)) {
+      return 'Maestro';
+    }
+
+    // 5. Mastercard: 51-55 o rango 2221-2720
+    if (/^5[1-5]/.test(num)) {
+      return 'Mastercard';
+    }
+    if (num.length >= 4) {
+      const primerosCuatro = parseInt(num.slice(0, 4), 10);
+      if (primerosCuatro >= 2221 && primerosCuatro <= 2720) {
+        return 'Mastercard';
+      }
+    } else if (num.startsWith('2')) {
+      // Mientras escribe los primeros 2-3 dígitos del rango 2221-2720
+      const prefijo = parseInt(num, 10);
+      if (num.length === 1 && prefijo === 2) return 'Mastercard';
+      if (num.length === 2 && prefijo >= 22 && prefijo <= 27) return 'Mastercard';
+      if (num.length === 3 && prefijo >= 222 && prefijo <= 272) return 'Mastercard';
+    }
+
+    // 6. Discover: 6011, 65 o rango 644-649
+    if (/^(6011|65|64[4-9])/.test(num)) {
+      return 'Discover';
+    }
+
+    return '';
+  }
+
+  /**
+   * Se ejecuta en tiempo real cada vez que cambia el número de tarjeta
+   */
+  alCambiarNumeroTarjeta(): void {
+    const limpio = String(this.nuevaTarjeta.numeroTarjeta || '').replace(/\D/g, '');
+    this.nuevaTarjeta.numeroTarjeta = limpio;
+
+    if (!limpio) {
+      this.franquiciaDetectada = '';
+      this.nuevaTarjeta.franquicia = '';
+      this.errorFranquicia = '';
+      return;
+    }
+
+    const franquicia = this.detectarFranquiciaPorNumero(limpio);
+    if (franquicia) {
+      this.franquiciaDetectada = franquicia;
+      this.nuevaTarjeta.franquicia = franquicia;
+      this.errorFranquicia = '';
+    } else {
+      this.franquiciaDetectada = '';
+      this.nuevaTarjeta.franquicia = '';
+      this.errorFranquicia = 'Franquicia no reconocida';
+    }
+  }
+
   private obtenerUsuarioAutenticado(): void {
     try {
       const usuarioSesion = localStorage.getItem('app_usuario_actual');
@@ -76,73 +166,71 @@ export class BilleteraVirtualComponent implements OnInit {
     }
   }
 
-cargarHistorial(): void {
-  if (!this.idUsuario) return;
+  cargarHistorial(): void {
+    if (!this.idUsuario) return;
 
-  this.billeteraService.obtenerHistorial(this.idUsuario).subscribe({
-    next: (data: any) => {
-      const lista = Array.isArray(data) ? data : (data?.historial || []);
+    this.billeteraService.obtenerHistorial(this.idUsuario).subscribe({
+      next: (data: any) => {
+        const lista = Array.isArray(data) ? data : (data?.historial || []);
 
-      this.historial = lista.map((h: any) => {
-        const descripcion = h.info_historial || h.concepto || h.descripcion || 'Movimiento de Billetera';
-        const fechaRaw = h.fecha_transaccion || h.fecha || '';
-        const descLower = descripcion.toLowerCase();
+        this.historial = lista.map((h: any) => {
+          const descripcion = h.info_historial || h.concepto || h.descripcion || 'Movimiento de Billetera';
+          const fechaRaw = h.fecha_transaccion || h.fecha || '';
+          const descLower = descripcion.toLowerCase();
 
-        let montoCalculado = Math.abs(Number(h.monto || h.valor || 0));
+          let montoCalculado = Math.abs(Number(h.monto || h.valor || 0));
 
-        const esRecarga = descLower.includes('incremento') ||
-                          descLower.includes('recarga') ||
-                          descLower.includes('añad');
+          const esRecarga = descLower.includes('incremento') ||
+                            descLower.includes('recarga') ||
+                            descLower.includes('añad');
 
-        const esCompra = descLower.includes('compra') ||
-                         descLower.includes('pago') ||
-                         descLower.includes('descuento');
+          const esCompra = descLower.includes('compra') ||
+                           descLower.includes('pago') ||
+                           descLower.includes('descuento');
 
-        if (montoCalculado === 0) {
-          if (esCompra) {
-            // En compras el texto dice: "... por 980000. Saldo restante: 10000"
-            const matchCompra = descripcion.match(/por\s+(\d+)/i);
-            if (matchCompra && matchCompra[1]) {
-              montoCalculado = parseInt(matchCompra[1], 10);
-            } else {
-              const numerosEncontrados = descripcion.match(/\d+/g);
-              if (numerosEncontrados && numerosEncontrados.length > 0) {
-                montoCalculado = parseInt(numerosEncontrados[0], 10);
+          if (montoCalculado === 0) {
+            if (esCompra) {
+              const matchCompra = descripcion.match(/por\s+(\d+)/i);
+              if (matchCompra && matchCompra[1]) {
+                montoCalculado = parseInt(matchCompra[1], 10);
+              } else {
+                const numerosEncontrados = descripcion.match(/\d+/g);
+                if (numerosEncontrados && numerosEncontrados.length > 0) {
+                  montoCalculado = parseInt(numerosEncontrados[0], 10);
+                }
               }
-            }
-          } else {
-            // En recargas o reembolsos toma el monto del texto
-            const matchPor = descripcion.match(/por\s+(\d+)/i);
-            if (matchPor && matchPor[1]) {
-              montoCalculado = parseInt(matchPor[1], 10);
             } else {
-              const numerosEncontrados = descripcion.match(/\d+/g);
-              if (numerosEncontrados && numerosEncontrados.length > 0) {
-                montoCalculado = parseInt(numerosEncontrados[numerosEncontrados.length - 1], 10);
+              const matchPor = descripcion.match(/por\s+(\d+)/i);
+              if (matchPor && matchPor[1]) {
+                montoCalculado = parseInt(matchPor[1], 10);
+              } else {
+                const numerosEncontrados = descripcion.match(/\d+/g);
+                if (numerosEncontrados && numerosEncontrados.length > 0) {
+                  montoCalculado = parseInt(numerosEncontrados[numerosEncontrados.length - 1], 10);
+                }
               }
             }
           }
-        }
 
-        return {
-          id_transaccion: h.id_historial || h.id_transaccion || h.idTransaccion,
-          concepto: descripcion,
-          fecha: typeof fechaRaw === 'string' ? fechaRaw.split('T')[0] : fechaRaw,
-          monto: montoCalculado,
-          tipo: esRecarga ? 'RECARGA' : (esCompra ? 'COMPRA' : 'REEMBOLSO'),
-          referencia: `ID #${h.id_historial || h.id_transaccion || 'N/A'}`
-        };
-      });
+          return {
+            id_transaccion: h.id_historial || h.id_transaccion || h.idTransaccion,
+            concepto: descripcion,
+            fecha: typeof fechaRaw === 'string' ? fechaRaw.split('T')[0] : fechaRaw,
+            monto: montoCalculado,
+            tipo: esRecarga ? 'RECARGA' : (esCompra ? 'COMPRA' : 'REEMBOLSO'),
+            referencia: `ID #${h.id_historial || h.id_transaccion || 'N/A'}`
+          };
+        });
 
-      this.cdr.detectChanges();
-    },
-    error: (err: any) => {
-      console.error('Error al cargar historial:', err);
-      this.historial = [];
-      this.cdr.detectChanges();
-    }
-  });
-}
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error al cargar historial:', err);
+        this.historial = [];
+        this.cdr.detectChanges();
+      }
+    });
+  }
 
   cargarDatosBilletera(): void {
     if (!this.idUsuario) return;
@@ -154,7 +242,6 @@ cargarHistorial(): void {
         this.idBilletera = b.id_billetera || b.idBilletera || 0;
         this.saldo = Number(b.saldo || 0);
 
-        // Mapeo exhaustivo para las tarjetas en la vista y en los modales
         this.tarjetas = (data.tarjetas || []).map((t: any) => {
           const num = t.numero_tarjeta || t.numeroTarjeta || '';
           const tipo = t.tipo_tarjeta || t.tipoTarjeta || 'Crédito';
@@ -168,7 +255,7 @@ cargarHistorial(): void {
             numeroTarjeta: num,
             tipo_tarjeta: tipo,
             tipoTarjeta: tipo,
-            franquicia: t.franquicia || 'Visa',
+            franquicia: t.franquicia || this.detectarFranquiciaPorNumero(num) || 'Desconocida',
             fecha_expiracion: typeof exp === 'string' ? exp.split('T')[0] : exp,
             fechaExpiracion: typeof exp === 'string' ? exp.split('T')[0] : exp
           };
@@ -177,7 +264,6 @@ cargarHistorial(): void {
         this.cargando = false;
         this.cdr.detectChanges();
 
-        // Cargamos los movimientos de la tabla
         this.cargarHistorial();
       },
       error: (err: any) => {
@@ -232,7 +318,20 @@ cargarHistorial(): void {
       return;
     }
 
-    // 3. Validar estructura de la fecha de expiración (Formato MM/AA)
+    // 3. Validar franquicia reconocida automáticamente
+    const franquiciaValida = this.detectarFranquiciaPorNumero(numTarjeta);
+    if (!franquiciaValida) {
+      this.franquiciaDetectada = '';
+      this.errorFranquicia = 'Franquicia no reconocida';
+      this.mensajeError = 'Franquicia no reconocida. Verifica los primeros dígitos de la tarjeta.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.franquiciaDetectada = franquiciaValida;
+    this.nuevaTarjeta.franquicia = franquiciaValida;
+
+    // 4. Validar estructura de la fecha de expiración (Formato MM/AA)
     const formatoFecha = /^(0[1-9]|1[0-2])\/\d{2}$/;
     if (!formatoFecha.test(fechaExp)) {
       const partes = fechaExp.split('/');
@@ -249,7 +348,7 @@ cargarHistorial(): void {
       return;
     }
 
-    // 4. Extracción de mes y año
+    // 5. Extracción de mes y año
     const [mesStr, anioStr] = fechaExp.split('/');
     const mesTarjeta = parseInt(mesStr, 10);
     const anioTarjeta = 2000 + parseInt(anioStr, 10);
@@ -260,7 +359,7 @@ cargarHistorial(): void {
       return;
     }
 
-    // 5. Validación de vigencia (Mes/Año actual y límite de 5 años)
+    // 6. Validación de vigencia (Mes/Año actual y límite de 5 años)
     const hoy = new Date();
     const anioActual = hoy.getFullYear();
     const mesActual = hoy.getMonth() + 1;
@@ -286,7 +385,7 @@ cargarHistorial(): void {
       idBilletera: this.idBilletera,
       numeroTarjeta: numTarjeta,
       tipoTarjeta: this.nuevaTarjeta.tipoTarjeta || 'Crédito',
-      franquicia: this.nuevaTarjeta.franquicia || 'Visa',
+      franquicia: franquiciaValida,
       fechaExpiracion: fechaExp
     };
 
@@ -295,13 +394,14 @@ cargarHistorial(): void {
         this.mensajeExito = 'Tarjeta guardada con éxito.';
         this.mostrarModalAgregarTarjeta = false;
         
-        // Reinicio limpio del formulario
         this.nuevaTarjeta = {
           numeroTarjeta: '',
           tipoTarjeta: 'Crédito',
-          franquicia: 'Visa',
+          franquicia: '',
           fechaExpiracion: ''
         };
+        this.franquiciaDetectada = '';
+        this.errorFranquicia = '';
 
         this.cargarDatosBilletera();
         this.cdr.detectChanges();
