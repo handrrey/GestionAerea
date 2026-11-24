@@ -123,12 +123,20 @@
               💺 Gestionar Sillas
             </button>
 
-            <!-- Botón Hacer Check-in (Solo 48h antes del vuelo) -->
+            <!-- Botón Hacer Check-in (Solo 48h antes del vuelo y si aún NO ha hecho check-in) -->
             <button class="btn-pay-now" 
-              *ngIf="puedeHacerCheckIn(r)" 
-              (click)="irACheckIn(r)"
+              *ngIf="puedeHacerCheckIn(r) && !tieneCheckInRealizado(r)" 
+              (click)="irACheckIn(r, false)"
               style="background-color: #15803D;">
               ✅ Hacer Check-in
+            </button>
+
+            <!-- Botón Ver mi Pasabordo (Reemplaza a Hacer Check-in cuando ya lo confirmó) -->
+            <button class="btn-pay-now" 
+              *ngIf="tieneCheckInRealizado(r)" 
+              (click)="irACheckIn(r, true)"
+              style="background-color: #521E89;">
+              🎫 Ver mi Pasabordo
             </button>
 
             <!-- Botón Cancelar Vuelo Pagado (> 1h antes del vuelo con reembolso) -->

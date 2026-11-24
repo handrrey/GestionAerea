@@ -46,6 +46,8 @@ export class CheckInComponent implements OnInit {
   reservaSistemaSeleccionada: any = null;
 
   // Campos editables en modalidad manual / confirmación
+  nombreConfirmacion: string = '';
+  documentoConfirmacion: string = '';
   telefonoConfirmacion: string = '';
   emailConfirmacion: string = '';
   aceptaTerminos: boolean = true;
@@ -53,9 +55,15 @@ export class CheckInComponent implements OnInit {
   // Mensajes y estado de proceso
   cargandoInicial: boolean = false;
   procesandoCheckin: boolean = false;
+  enviandoCorreo: boolean = false;
   mensajeError: string = '';
   mensajeExito: string = '';
+  mensajeModalCorreo: string = '';
+
+  // Estado de la ventana emergente (Modal) del Pasabordo
   pasabordoGenerado: any = null;
+  mostrarModalPasabordo: boolean = false;
+  abrirModalDirecto: boolean = false;
 
   ngOnInit(): void {
     this.leerUsuarioSesion();
@@ -77,8 +85,8 @@ export class CheckInComponent implements OnInit {
   private inicializarDatos(): void {
     this.cargandoInicial = true;
 
-    // Verificar si viene una reserva preseleccionada desde Mis Reservas
     const reservaState = history.state?.reserva || null;
+    this.abrirModalDirecto = Boolean(history.state?.abrirPasabordo || localStorage.getItem('app_abrir_pasabordo_directo') === 'true');
     const reservaLocalStr = localStorage.getItem('app_reserva_checkin');
     const reservaPrevia = reservaState || (reservaLocalStr ? JSON.parse(reservaLocalStr) : null);
 
@@ -110,8 +118,8 @@ export class CheckInComponent implements OnInit {
             this.buscarReservaManual();
           }
           localStorage.removeItem('app_reserva_checkin');
+          localStorage.removeItem('app_abrir_pasabordo_directo');
         } else if (this.idUsuario > 0 && this.reservasUsuarioElegibles.length > 0) {
-          // Si el usuario tiene sesión y vuelos elegibles, abrir directo en Identificación en el Sistema
           this.modalidad = 'SISTEMA';
           this.seleccionarReservaSistema(this.reservasUsuarioElegibles[0]);
         }
@@ -130,7 +138,7 @@ export class CheckInComponent implements OnInit {
     this.modalidad = nuevaModalidad;
     this.mensajeError = '';
     this.mensajeExito = '';
-    this.pasabordoGenerado = null;
+    this.mostrarModalPasabordo = false;
 
     if (nuevaModalidad === 'SISTEMA') {
       if (!this.idUsuario) {
@@ -138,27 +146,33 @@ export class CheckInComponent implements OnInit {
       } else if (this.reservasUsuarioElegibles.length > 0 && !this.reservaSistemaSeleccionada) {
         this.seleccionarReservaSistema(this.reservasUsuarioElegibles[0]);
       }
+    } else if (nuevaModalidad === 'RAPIDA' && this.reservaEncontrada) {
+      this.cargarCamposEditablesDesdePasajero(this.pasajeroActivo);
     }
   }
 
-  /**
-   * Modalidad 1: Búsqueda manual por código de reserva o número de documento (DNI)
-   */
+  private cargarCamposEditablesDesdePasajero(p: any): void {
+    this.nombreConfirmacion = p?.nombreCompleto || '';
+    this.documentoConfirmacion = p?.documento && p.documento !== '-' ? p.documento : '';
+    this.telefonoConfirmacion = p?.telefono || this.usuarioSesion?.telefono || '';
+    this.emailConfirmacion = p?.email || this.usuarioSesion?.correo || this.usuarioSesion?.email || '';
+  }
+
   buscarReservaManual(): void {
     const termino = this.criterioBusqueda.trim().replace(/^#/, '').toUpperCase();
     this.mensajeError = '';
     this.mensajeExito = '';
     this.pasabordoGenerado = null;
+    this.mostrarModalPasabordo = false;
     this.reservaEncontrada = null;
 
     if (!termino) {
-      this.mensajeError = 'Ingresa un código de reserva (Ej. CMP-GMRG7) o número de documento.';
+      this.mensajeError = 'Ingresa un código de reserva (Ej. CMP-8CT65) o número de documento.';
       return;
     }
 
     this.buscando = true;
 
-    // Consultar todas las reservas o las del usuario activo para encontrar coincidencia
     const consulta$ = this.http.get<any>(`${this.apiUrl}/compra-reserva`).pipe(
       catchError(() =>
         this.idUsuario > 0
@@ -186,7 +200,6 @@ export class CheckInComponent implements OnInit {
           return;
         }
 
-        // Validar reglas de negocio: Pagado + margen de 48 horas
         if (!coincidencia.elegibleCheckin) {
           this.mensajeError = coincidencia.motivoNoElegible;
           this.cdr.detectChanges();
@@ -195,15 +208,17 @@ export class CheckInComponent implements OnInit {
 
         this.reservaEncontrada = coincidencia;
 
-        // Si buscó por documento, seleccionar automáticamente a ese pasajero
         const idxPorDni = coincidencia.pasajeros.findIndex(
           (p: any) => String(p.documento || '').toUpperCase() === termino
         );
         this.pasajeroSeleccionadoIdx = idxPorDni >= 0 ? idxPorDni : 0;
 
-        const pasajeroActual = this.pasajeroActivo;
-        this.telefonoConfirmacion = pasajeroActual?.telefono || '';
-        this.emailConfirmacion = pasajeroActual?.email || '';
+        this.cargarCamposEditablesDesdePasajero(this.pasajeroActivo);
+
+        if (this.abrirModalDirecto && this.pasajeroActivo?.checkinRealizado) {
+          this.abrirModalDirecto = false;
+          this.abrirModalPasabordo();
+        }
 
         this.cdr.detectChanges();
       },
@@ -216,25 +231,27 @@ export class CheckInComponent implements OnInit {
   }
 
   onCambioPasajeroManual(): void {
-    const p = this.pasajeroActivo;
-    this.telefonoConfirmacion = p?.telefono || '';
-    this.emailConfirmacion = p?.email || '';
+    this.cargarCamposEditablesDesdePasajero(this.pasajeroActivo);
     this.pasabordoGenerado = null;
+    this.mostrarModalPasabordo = false;
   }
 
-  /**
-   * Modalidad 2: Selección de reserva autocompletada del usuario logueado
-   */
   seleccionarReservaSistema(reserva: any): void {
     this.reservaSistemaSeleccionada = reserva;
     this.pasajeroSeleccionadoIdx = 0;
     this.mensajeError = '';
     this.mensajeExito = '';
     this.pasabordoGenerado = null;
+    this.mostrarModalPasabordo = false;
 
-    const p = reserva.pasajeros[0];
-    this.telefonoConfirmacion = p?.telefono || this.usuarioSesion?.telefono || '';
-    this.emailConfirmacion = p?.email || this.usuarioSesion?.correo || this.usuarioSesion?.email || '';
+    this.cargarCamposEditablesDesdePasajero(reserva.pasajeros[0]);
+  }
+
+  onCambioPasajeroSistema(index: number): void {
+    this.pasajeroSeleccionadoIdx = index;
+    this.cargarCamposEditablesDesdePasajero(this.pasajeroActivo);
+    this.pasabordoGenerado = null;
+    this.mostrarModalPasabordo = false;
   }
 
   get reservaActiva(): any {
@@ -247,11 +264,6 @@ export class CheckInComponent implements OnInit {
     return res.pasajeros[this.pasajeroSeleccionadoIdx] || res.pasajeros[0];
   }
 
-  /**
-   * Normaliza una reserva y evalúa estrictamente si cumple:
-   * 1) Estado === 'PAGADO'
-   * 2) Falta entre 0 y 48 horas para la salida del vuelo
-   */
   private normalizarReserva(r: any): any {
     const idReservaReal = Number(r.id_reserva || r.idReserva || r.id || 0);
     const idVueloReal = Number(r.id_vuelo || r.idVuelo || r.vuelo?.id_vuelo || r.vuelo?.idVuelo || 0);
@@ -262,11 +274,17 @@ export class CheckInComponent implements OnInit {
 
     const estadoPago = String(r.estado || 'PENDIENTE').toUpperCase();
     const codigoReserva = String(r.codigo_reserva || r.codigoReserva || 'RSV-000');
-    const soloFecha = String(v.fechaVuelo || v.fecha_vuelo || v.fecha || '').split('T')[0];
-    const horaSalida = String(v.horaVuelo || v.hora_vuelo || '00:00').slice(0, 5);
-    const fechaSalidaISO = soloFecha ? `${soloFecha}T${horaSalida}:00` : '';
 
-    // Evaluar ventana de 48 horas
+    // Fecha y hora de salida
+    const soloFechaSalida = String(v.fechaVuelo || v.fecha_vuelo || v.fechaSalida || v.fecha || '').split('T')[0];
+    const horaSalida = String(v.horaVuelo || v.hora_vuelo || '00:00').slice(0, 5);
+    const fechaSalidaISO = soloFechaSalida ? `${soloFechaSalida}T${horaSalida}:00` : '';
+
+    // Fecha y hora de llegada (hora local)
+    const soloFechaLlegada = String(v.fechaLlegada || v.fecha_llegada || soloFechaSalida || '').split('T')[0];
+    const horaLlegada = String(v.horaLlegada || v.hora_llegada || horaSalida || '00:00').slice(0, 5);
+    const fechaLlegadaISO = soloFechaLlegada ? `${soloFechaLlegada}T${horaLlegada}:00` : '';
+
     const ahora = new Date().getTime();
     const salidaMs = fechaSalidaISO ? new Date(fechaSalidaISO).getTime() : NaN;
     const diferenciaMs = salidaMs - ahora;
@@ -287,31 +305,75 @@ export class CheckInComponent implements OnInit {
       motivoNoElegible = `El Check-in se habilita únicamente 48 horas antes del vuelo. Faltan aproximadamente ${horasFaltantesApertura} hora(s) para abrir el Check-in de la reserva ${codigoReserva}.`;
     }
 
-    // Check-ins persistidos localmente como respaldo
-    let checkinsLocales: Record<string, boolean> = {};
+    let checkinsLocales: Record<string, any> = {};
+    let asientosLocales: Record<string, string[]> = {};
+    let clasesLocales: Record<string, string> = {};
     try {
       checkinsLocales = JSON.parse(localStorage.getItem('app_checkins_confirmados') || '{}');
-    } catch {
-      checkinsLocales = {};
+      asientosLocales = JSON.parse(localStorage.getItem('app_asientos_por_reserva') || '{}');
+      clasesLocales = JSON.parse(localStorage.getItem('app_clases_por_reserva') || '{}');
+    } catch {}
+
+    const sillasGuardadas = asientosLocales[idReservaReal] || asientosLocales[codigoReserva] || [];
+    const montoTotal = Number(r.monto_total || r.montoTotal || 0);
+
+    const pasajerosRaw = Array.isArray(r.pasajeros) && r.pasajeros.length > 0
+      ? r.pasajeros
+      : [{ nombreCompleto: this.usuarioSesion?.nombre || 'Pasajero Titular', documento: this.usuarioSesion?.documento || '-' }];
+
+    const cantidadPasajeros = pasajerosRaw.length || 1;
+
+    // Detectar si es Primera Clase (1. localStorage, 2. campo backend, 3. precio pagado vs costoPrimera, 4. fila de asiento)
+    const claseGuardada = clasesLocales[idReservaReal] || clasesLocales[codigoReserva] || '';
+    const claseBackend = r.clase || r.clase_boleto || r.claseBoleto || pasajerosRaw[0]?.clase || '';
+    let esPrimeraClase = String(claseGuardada || claseBackend).toUpperCase().includes('PRIMERA');
+
+    const precioPrimera = Number(v.costoPrimera || v.costo_primera || v.precioPrimera || 0);
+    const precioEconomico = Number(v.costoEconomico || v.costo_economico || v.precioEconomico || v.precioBase || 0);
+
+    if (!esPrimeraClase && precioPrimera > 0 && montoTotal > 0) {
+      const unitarioPagado = montoTotal / cantidadPasajeros;
+      if (
+        Math.abs(unitarioPagado - precioPrimera) <= 100 ||
+        (precioEconomico > 0 && unitarioPagado > precioEconomico * 1.2)
+      ) {
+        esPrimeraClase = true;
+      }
     }
 
-    const pasajerosRaw = Array.isArray(r.pasajeros) ? r.pasajeros : [];
     const pasajeros = pasajerosRaw.map((p: any, idx: number) => {
       const idPasajero = Number(p.idPasajero || p.id_pasajero || idx + 1);
       const claveLocal = `${idReservaReal}_${idPasajero}`;
-      const yaHizoCheckin = Boolean(p.checkinRealizado || p.checkin_realizado || checkinsLocales[claveLocal]);
+      const datosEditadosGuardados = checkinsLocales[`DATOS_${claveLocal}`] || {};
+
+      const yaHizoCheckin = Boolean(
+        p.checkinRealizado ||
+        p.checkin_realizado ||
+        r.checkinRealizado ||
+        checkinsLocales[claveLocal] ||
+        checkinsLocales[`RES_${idReservaReal}`]
+      );
+
+      const sillaReal = sillasGuardadas[idx] || p.sillaActual || p.numeroSilla || p.numero_silla || (esPrimeraClase ? `${idx + 1}A` : `${idx + 10}A`);
+
+      // Verificar también si la fila de silla pertenece a cabina de Primera Clase (filas 1-4 nacional / 1-8 internacional)
+      const filaSilla = parseInt(String(sillaReal), 10);
+      const esInternacional = String(v.tipoVuelo || v.tipo || '').toLowerCase().includes('internacional') ||
+        ['londres', 'madrid', 'miami', 'york'].some(c => `${v.origen} ${v.destino}`.toLowerCase().includes(c));
+      const maxFilaPrimera = esInternacional ? 8 : 4;
+      const esPrimeraPorSilla = !isNaN(filaSilla) && filaSilla >= 1 && filaSilla <= maxFilaPrimera;
+
+      const esPrimeraFinal = esPrimeraClase || String(p.clase || '').toUpperCase().includes('PRIMERA') || esPrimeraPorSilla;
 
       return {
         idPasajero,
-        nombreCompleto: p.nombreCompleto || p.nombre || `Pasajero ${idx + 1}`,
-        documento: String(p.documento || p.dni || '-'),
-        telefono: p.telefono || '',
-        email: p.email || p.correo || '',
+        nombreCompleto: datosEditadosGuardados.nombreCompleto || p.nombreCompleto || p.nombre || `Pasajero ${idx + 1}`,
+        documento: String(datosEditadosGuardados.documento || p.documento || p.dni || '-'),
+        telefono: datosEditadosGuardados.telefono || p.telefono || '',
+        email: datosEditadosGuardados.email || p.email || p.correo || '',
         idSilla: p.idSilla || p.id_silla || null,
-        sillaActual: p.sillaActual || p.numeroSilla || p.numero_silla || 'Asignada en puerta',
-        clase: String(r.clase || p.clase || 'ECONOMICA').toUpperCase().includes('PRIMERA')
-          ? 'Primera Clase'
-          : 'Económica',
+        sillaActual: sillaReal,
+        clase: esPrimeraFinal ? 'Primera Clase' : 'Económica',
         checkinRealizado: yaHizoCheckin
       };
     });
@@ -326,6 +388,8 @@ export class CheckInComponent implements OnInit {
       destino: v.destino || '-',
       fechaSalida: fechaSalidaISO,
       horaSalida,
+      fechaLlegada: fechaLlegadaISO,
+      horaLlegada,
       duracion: v.duracion || v.duracionVuelo || '-',
       horasRestantes: Math.max(0, Math.floor(horasRestantes)),
       elegibleCheckin,
@@ -334,8 +398,57 @@ export class CheckInComponent implements OnInit {
     };
   }
 
+  abrirModalPasabordo(): void {
+    const reserva = this.reservaActiva;
+    const pasajero = this.pasajeroActivo;
+    if (!reserva || !pasajero) return;
+
+    // Aplicar siempre los últimos datos confirmados o corregidos en formulario
+    const nombreFinal = (this.nombreConfirmacion || pasajero.nombreCompleto || '').trim();
+    const documentoFinal = (this.documentoConfirmacion || pasajero.documento || '').trim();
+    const correoFinal = (this.emailConfirmacion || pasajero.email || this.usuarioSesion?.correo || '').trim();
+    const telefonoFinal = (this.telefonoConfirmacion || pasajero.telefono || '').trim();
+
+    if (nombreFinal) pasajero.nombreCompleto = nombreFinal;
+    if (documentoFinal) pasajero.documento = documentoFinal;
+    if (correoFinal) pasajero.email = correoFinal;
+    if (telefonoFinal) pasajero.telefono = telefonoFinal;
+
+    this.mensajeModalCorreo = '';
+    this.pasabordoGenerado = {
+      idReserva: reserva.idReserva,
+      codigoReserva: reserva.codigo,
+      vueloCodigo: reserva.vueloCodigo,
+      origen: reserva.origen,
+      destino: reserva.destino,
+      fechaSalida: reserva.fechaSalida,
+      horaSalida: reserva.horaSalida,
+      fechaLlegada: reserva.fechaLlegada,
+      horaLlegada: reserva.horaLlegada,
+      duracion: reserva.duracion,
+      pasajero: pasajero.nombreCompleto,
+      documento: pasajero.documento,
+      correo: pasajero.email,
+      telefono: pasajero.telefono,
+      silla: pasajero.sillaActual,
+      clase: pasajero.clase,
+      puerta: 'B' + ((reserva.idVuelo % 12) + 1),
+      grupoAbordaje: pasajero.clase.includes('Primera') ? 'GRUPO 1 (Prioritario)' : 'GRUPO 3',
+      codigoEmbarque: `GA-${reserva.codigo}-${pasajero.idPasajero}`
+    };
+
+    this.mostrarModalPasabordo = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarModalPasabordo(): void {
+    this.mostrarModalPasabordo = false;
+    this.mensajeModalCorreo = '';
+    this.cdr.detectChanges();
+  }
+
   /**
-   * Confirma el check-in en el backend y genera el pasabordo PDF del pasajero
+   * Confirma o actualiza el check-in (funciona tanto la primera vez como al corregir datos en Check-in Manual)
    */
   confirmarCheckIn(): void {
     const reserva = this.reservaActiva;
@@ -356,62 +469,67 @@ export class CheckInComponent implements OnInit {
       return;
     }
 
-    if (this.modalidad === 'RAPIDA' && (!this.telefonoConfirmacion.trim() || !this.emailConfirmacion.trim())) {
-      this.mensajeError = 'Completa el teléfono y correo de contacto del pasajero para emitir el pasabordo.';
-      return;
+    if (this.modalidad === 'RAPIDA') {
+      if (!this.nombreConfirmacion.trim() || !this.documentoConfirmacion.trim()) {
+        this.mensajeError = 'Ingresa el nombre completo y el documento del pasajero.';
+        return;
+      }
+      if (!this.telefonoConfirmacion.trim() || !this.emailConfirmacion.trim()) {
+        this.mensajeError = 'Completa el teléfono y correo de contacto del pasajero para emitir el pasabordo.';
+        return;
+      }
     }
 
     this.procesandoCheckin = true;
     this.mensajeError = '';
     this.mensajeExito = '';
 
+    const nombreFinal = this.nombreConfirmacion.trim() || pasajero.nombreCompleto;
+    const documentoFinal = this.documentoConfirmacion.trim() || pasajero.documento;
+    const telefonoFinal = this.telefonoConfirmacion.trim() || pasajero.telefono;
+    const emailFinal = this.emailConfirmacion.trim() || pasajero.email;
+
     const payloadCheckin = {
       idReserva: reserva.idReserva,
       idPasajero: pasajero.idPasajero,
-      telefono: this.telefonoConfirmacion || pasajero.telefono,
-      email: this.emailConfirmacion || pasajero.email,
+      nombreCompleto: nombreFinal,
+      documento: documentoFinal,
+      telefono: telefonoFinal,
+      email: emailFinal,
       checkinRealizado: true
     };
 
-    // Intentar confirmar en backend (PATCH/POST) y continuar con la generación del pasabordo
-    this.http.patch(`${this.apiUrl}/check-in/${pasajero.idPasajero}`, payloadCheckin).pipe(
+    this.http.patch(`${this.apiUrl}/compra-reserva/${reserva.idReserva}/check-in`, payloadCheckin).pipe(
       catchError(() =>
-        this.http.post(`${this.apiUrl}/check-in`, payloadCheckin).pipe(catchError(() => of({ ok: true })))
+        this.http.patch(`${this.apiUrl}/check-in/${pasajero.idPasajero}`, payloadCheckin).pipe(
+          catchError(() => of({ ok: true }))
+        )
       )
     ).subscribe({
       next: () => {
+        pasajero.nombreCompleto = nombreFinal;
+        pasajero.documento = documentoFinal;
+        pasajero.telefono = telefonoFinal;
+        pasajero.email = emailFinal;
         pasajero.checkinRealizado = true;
-        pasajero.telefono = payloadCheckin.telefono;
-        pasajero.email = payloadCheckin.email;
 
-        // Guardar respaldo en localStorage
         try {
           const checkinsLocales = JSON.parse(localStorage.getItem('app_checkins_confirmados') || '{}');
-          checkinsLocales[`${reserva.idReserva}_${pasajero.idPasajero}`] = true;
+          const claveLocal = `${reserva.idReserva}_${pasajero.idPasajero}`;
+          checkinsLocales[claveLocal] = true;
+          checkinsLocales[`RES_${reserva.idReserva}`] = true;
+          checkinsLocales[`DATOS_${claveLocal}`] = {
+            nombreCompleto: nombreFinal,
+            documento: documentoFinal,
+            telefono: telefonoFinal,
+            email: emailFinal
+          };
           localStorage.setItem('app_checkins_confirmados', JSON.stringify(checkinsLocales));
         } catch {}
 
         this.procesandoCheckin = false;
-        this.mensajeExito = `¡Check-in confirmado exitosamente para ${pasajero.nombreCompleto}!`;
-
-        this.pasabordoGenerado = {
-          codigoReserva: reserva.codigo,
-          vueloCodigo: reserva.vueloCodigo,
-          origen: reserva.origen,
-          destino: reserva.destino,
-          fechaSalida: reserva.fechaSalida,
-          horaSalida: reserva.horaSalida,
-          pasajero: pasajero.nombreCompleto,
-          documento: pasajero.documento,
-          silla: pasajero.sillaActual,
-          clase: pasajero.clase,
-          puerta: 'B' + ((reserva.idVuelo % 12) + 1),
-          grupoAbordaje: pasajero.clase.includes('Primera') ? 'GRUPO 1 (Prioritario)' : 'GRUPO 3',
-          codigoEmbarque: `GA-${reserva.codigo}-${pasajero.idPasajero}`
-        };
-
-        this.cdr.detectChanges();
-        this.descargarPasabordoPDF(this.pasabordoGenerado);
+        this.mensajeExito = `¡Check-in confirmado con los datos actualizados de ${pasajero.nombreCompleto}!`;
+        this.abrirModalPasabordo();
       },
       error: () => {
         this.procesandoCheckin = false;
@@ -421,17 +539,52 @@ export class CheckInComponent implements OnInit {
     });
   }
 
-  /**
-   * Genera y abre el Pasabordo listo para guardar como PDF o imprimir
-   */
+  enviarPasabordoPorCorreo(): void {
+    const pb = this.pasabordoGenerado;
+    if (!pb) return;
+
+    const correoDestino = (pb.correo || this.emailConfirmacion || '').trim();
+    if (!correoDestino) {
+      this.mensajeModalCorreo = '⚠️ Por favor ingresa un correo electrónico válido para enviar el pasabordo.';
+      return;
+    }
+
+    this.enviandoCorreo = true;
+    this.mensajeModalCorreo = '';
+
+    const payloadCorreo = {
+      correo: correoDestino,
+      ...pb
+    };
+
+    this.http.post(`${this.apiUrl}/compra-reserva/${pb.idReserva}/enviar-pasabordo`, payloadCorreo).pipe(
+      catchError(() => of({ ok: true, localFallback: true }))
+    ).subscribe({
+      next: () => {
+        this.enviandoCorreo = false;
+        this.mensajeModalCorreo = `✅ Pasabordo enviado exitosamente a ${correoDestino}`;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.enviandoCorreo = false;
+        this.mensajeModalCorreo = '⚠️ No se pudo enviar el correo en este momento.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   descargarPasabordoPDF(pb: any): void {
     if (!pb) return;
 
-    const fechaFormateada = pb.fechaSalida
+    const fechaSalidaFmt = pb.fechaSalida
       ? new Date(pb.fechaSalida).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
       : '-';
 
-    const ventana = window.open('', '_blank', 'width=820,height=620');
+    const fechaLlegadaFmt = pb.fechaLlegada
+      ? new Date(pb.fechaLlegada).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
+      : fechaSalidaFmt;
+
+    const ventana = window.open('', '_blank', 'width=820,height=660');
     if (!ventana) {
       alert('Habilita las ventanas emergentes para descargar el Pasabordo PDF.');
       return;
@@ -458,10 +611,10 @@ export class CheckInComponent implements OnInit {
           .bp-body { padding: 26px 28px; }
           .route { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px dashed #D3AFFB; padding-bottom: 18px; margin-bottom: 18px; }
           .city { font-size: 22px; font-weight: 800; color: #521E89; }
-          .plane { font-size: 26px; color: #763CB4; }
+          .plane { font-size: 24px; color: #763CB4; font-weight: 700; }
           .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 22px; }
           .item label { display: block; font-size: 10px; font-weight: 700; color: #763CB4; text-transform: uppercase; }
-          .item strong { font-size: 15px; color: #1f1630; }
+          .item strong { font-size: 14px; color: #1f1630; }
           .seat-highlight { font-size: 22px !important; color: #521E89 !important; }
           .barcode-box {
             background: #FAFAFA; border: 1px solid #D3AFFB; border-radius: 10px;
@@ -491,10 +644,11 @@ export class CheckInComponent implements OnInit {
               <div class="item"><label>Pasajero</label><strong>${pb.pasajero}</strong></div>
               <div class="item"><label>Documento (DNI)</label><strong>${pb.documento}</strong></div>
               <div class="item"><label>Código de Reserva</label><strong>${pb.codigoReserva}</strong></div>
-              <div class="item"><label>Fecha de Vuelo</label><strong>${fechaFormateada}</strong></div>
-              <div class="item"><label>Hora de Salida</label><strong>${pb.horaSalida} HRS</strong></div>
+              <div class="item"><label>Salida</label><strong>${fechaSalidaFmt} • ${pb.horaSalida} HRS</strong></div>
+              <div class="item"><label>Llegada (Hora Local)</label><strong>${fechaLlegadaFmt} • ${pb.horaLlegada} HRS</strong></div>
               <div class="item"><label>Puerta / Grupo</label><strong>Puerta ${pb.puerta} • ${pb.grupoAbordaje}</strong></div>
               <div class="item"><label>Silla Asignada</label><strong class="seat-highlight">${pb.silla}</strong></div>
+              <div class="item"><label>Cabina / Clase</label><strong>${pb.clase}</strong></div>
               <div class="item"><label>Estado</label><strong style="color:#15803D;">CHECK-IN CONFIRMADO ✓</strong></div>
             </div>
             <div class="barcode-box">

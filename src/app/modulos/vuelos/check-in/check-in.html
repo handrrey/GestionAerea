@@ -38,7 +38,7 @@
     </div>
 
     <!-- ========================================================= -->
-    <!-- APARTADO 1: CHECK-IN RÁPIDO (LLENADO MANUAL)              -->
+    <!-- APARTADO 1: CHECK-IN RÁPIDO (LLENADO Y CORRECCIÓN MANUAL) -->
     <!-- ========================================================= -->
     <div *ngIf="!cargandoInicial && modalidad === 'RAPIDA'">
       <div class="search-box">
@@ -49,7 +49,7 @@
             id="res-code"
             [(ngModel)]="criterioBusqueda"
             (keyup.enter)="buscarReservaManual()"
-            placeholder="Ej. CMP-GMRG7 o 1098765432">
+            placeholder="Ej. CMP-8CT65 o 1098765432">
           <button
             type="button"
             class="btn-search"
@@ -60,11 +60,10 @@
         </div>
       </div>
 
-      <!-- Formulario de validación manual si se encontró reserva elegible -->
+      <!-- Formulario editable para corregir o completar datos del pasajero -->
       <div class="passenger-card" *ngIf="reservaEncontrada">
-        <span class="autofill-badge manual-badge">✍️ VALIDACIÓN MANUAL</span>
+        <span class="autofill-badge manual-badge">✍️ VALIDACIÓN Y CORRECCIÓN MANUAL</span>
 
-        <!-- Selector si hay más de un pasajero en la reserva -->
         <div class="manual-inputs-grid" style="margin-bottom: 16px;">
           <div class="form-field" *ngIf="reservaEncontrada.pasajeros.length > 1">
             <label>SELECCIONA EL PASAJERO</label>
@@ -73,6 +72,16 @@
                 {{ p.nombreCompleto }} ({{ p.sillaActual }}) {{ p.checkinRealizado ? '✓' : '' }}
               </option>
             </select>
+          </div>
+
+          <div class="form-field">
+            <label>NOMBRE COMPLETO DEL PASAJERO *</label>
+            <input type="text" [(ngModel)]="nombreConfirmacion" placeholder="Nombre y apellidos">
+          </div>
+
+          <div class="form-field">
+            <label>DOCUMENTO (DNI) *</label>
+            <input type="text" [(ngModel)]="documentoConfirmacion" placeholder="Número de documento">
           </div>
 
           <div class="form-field">
@@ -88,23 +97,18 @@
 
         <div class="passenger-grid" *ngIf="pasajeroActivo">
           <div class="data-item">
-            <label>PASAJERO</label>
-            <span>{{ pasajeroActivo.nombreCompleto }}</span>
-          </div>
-
-          <div class="data-item">
-            <label>DOCUMENTO (DNI)</label>
-            <span>{{ pasajeroActivo.documento }}</span>
-          </div>
-
-          <div class="data-item">
             <label>VUELO CONFIRMADO</label>
             <span>{{ reservaEncontrada.vueloCodigo }} ({{ reservaEncontrada.origen }} → {{ reservaEncontrada.destino }})</span>
           </div>
 
           <div class="data-item">
-            <label>FECHA Y HORA DE SALIDA</label>
+            <label>SALIDA</label>
             <span>{{ reservaEncontrada.fechaSalida | date:'dd MMM yyyy' | uppercase }} | {{ reservaEncontrada.horaSalida }} HRS</span>
+          </div>
+
+          <div class="data-item">
+            <label>LLEGADA (HORA LOCAL)</label>
+            <span>{{ reservaEncontrada.fechaLlegada | date:'dd MMM yyyy' | uppercase }} | {{ reservaEncontrada.horaLlegada }} HRS</span>
           </div>
 
           <div class="data-item">
@@ -115,7 +119,7 @@
           <div class="data-item">
             <label>ESTADO DE ASISTENCIA</label>
             <span [class.status-ok]="!pasajeroActivo.checkinRealizado" [class.status-done]="pasajeroActivo.checkinRealizado">
-              {{ pasajeroActivo.checkinRealizado ? 'Check-in ya realizado ✓' : 'Listo para confirmar (' + reservaEncontrada.horasRestantes + 'h restantes)' }}
+              {{ pasajeroActivo.checkinRealizado ? 'Check-in realizado ✓ (Puedes actualizar datos y regenerar)' : 'Listo para confirmar (' + reservaEncontrada.horasRestantes + 'h restantes)' }}
             </span>
           </div>
         </div>
@@ -132,7 +136,6 @@
         <p>Recuerda que solo aparecen aquí tus compras en estado <strong>Pagado</strong> cuya salida ocurra dentro de las próximas <strong>48 horas</strong>.</p>
       </div>
 
-      <!-- Selector de vuelos elegibles del usuario -->
       <div class="search-box" *ngIf="reservasUsuarioElegibles.length > 0">
         <label>Tus Vuelos Pagados Disponibles para Check-in (Ventana 48h)</label>
         <div class="vuelos-pills">
@@ -146,7 +149,6 @@
           </button>
         </div>
 
-        <!-- Selector de pasajero si la compra tiene varios -->
         <div *ngIf="reservaSistemaSeleccionada?.pasajeros?.length > 1" style="margin-top: 14px;">
           <label>Selecciona el Pasajero de esta Reserva:</label>
           <div class="vuelos-pills">
@@ -155,14 +157,13 @@
               class="vuelo-pill"
               *ngFor="let p of reservaSistemaSeleccionada.pasajeros; let i = index"
               [class.selected]="pasajeroSeleccionadoIdx === i"
-              (click)="pasajeroSeleccionadoIdx = i">
+              (click)="onCambioPasajeroSistema(i)">
               👤 {{ p.nombreCompleto }} ({{ p.sillaActual }}) {{ p.checkinRealizado ? '✓' : '' }}
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Ficha de Datos Autocompletados desde el Sistema -->
       <div class="passenger-card" *ngIf="reservaSistemaSeleccionada && pasajeroActivo">
         <span class="autofill-badge">✓ DATOS AUTOCOMPLETADOS DEL SISTEMA</span>
 
@@ -188,8 +189,13 @@
           </div>
 
           <div class="data-item">
-            <label>FECHA Y HORA</label>
+            <label>SALIDA</label>
             <span>{{ reservaSistemaSeleccionada.fechaSalida | date:'dd MMM yyyy' | uppercase }} | {{ reservaSistemaSeleccionada.horaSalida }} HRS</span>
+          </div>
+
+          <div class="data-item">
+            <label>LLEGADA (HORA LOCAL)</label>
+            <span>{{ reservaSistemaSeleccionada.fechaLlegada | date:'dd MMM yyyy' | uppercase }} | {{ reservaSistemaSeleccionada.horaLlegada }} HRS</span>
           </div>
 
           <div class="data-item">
@@ -217,21 +223,22 @@
       <div class="button-group">
         <button type="button" class="btn-cancel" (click)="volverAMisReservas()">VOLVER</button>
 
+        <!-- En modalidad RAPIDA permite confirmar/regenerar siempre con los datos editados -->
         <button
           type="button"
           class="btn-confirm"
-          *ngIf="!pasajeroActivo.checkinRealizado"
+          *ngIf="!pasajeroActivo.checkinRealizado || modalidad === 'RAPIDA'"
           [disabled]="procesandoCheckin"
           (click)="confirmarCheckIn()">
-          {{ procesandoCheckin ? 'PROCESANDO...' : 'CONFIRMAR Y GENERAR PASABORDO (PDF)' }}
+          {{ procesandoCheckin ? 'PROCESANDO...' : 'CONFIRMAR Y GENERAR PASABORDO' }}
         </button>
 
         <button
           type="button"
           class="btn-confirm btn-pdf-ready"
           *ngIf="pasajeroActivo.checkinRealizado"
-          (click)="pasabordoGenerado ? descargarPasabordoPDF(pasabordoGenerado) : confirmarCheckIn()">
-          📄 DESCARGAR PASABORDO (PDF)
+          (click)="abrirModalPasabordo()">
+          🎫 VER MI PASABORDO
         </button>
       </div>
     </ng-container>
@@ -239,5 +246,124 @@
     <div class="button-group" *ngIf="!reservaActiva" style="margin-top: 10px;">
       <button type="button" class="btn-cancel" (click)="volverAMisReservas()">VOLVER A MIS VUELOS</button>
     </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- VENTANA EMERGENTE (MODAL) DEL PASABORDO                                   -->
+<!-- ========================================================================= -->
+<div class="modal-backdrop" *ngIf="mostrarModalPasabordo && pasabordoGenerado"
+     style="position: fixed; inset: 0; background: rgba(25, 12, 46, 0.72); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px;">
+  <div class="boarding-modal"
+       style="background: #FAFAFA; border-radius: 20px; max-width: 700px; width: 100%; border: 2px solid #521E89; box-shadow: 0 20px 45px rgba(82, 30, 137, 0.35); overflow: hidden;">
+
+    <!-- Cabecera Morada -->
+    <div style="background: linear-gradient(135deg, #521E89, #763CB4); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <span style="font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #D3AFFB; font-weight: 700;">DOCUMENTO OFICIAL DE EMBARQUE</span>
+        <h2 style="margin: 2px 0 0; font-size: 20px;">✈️ Pasabordo Digital</h2>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="background: #D3AFFB; color: #521E89; padding: 5px 12px; border-radius: 14px; font-weight: 800; font-size: 12px;">
+          {{ pasabordoGenerado.clase }}
+        </span>
+        <button type="button" (click)="cerrarModalPasabordo()"
+                style="background: rgba(255,255,255,0.2); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-weight: bold;">
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <!-- Cuerpo del Pasabordo -->
+    <div style="padding: 24px;">
+      <!-- Ruta -->
+      <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid #D3AFFB; border-radius: 14px; padding: 16px 20px; margin-bottom: 18px;">
+        <div>
+          <span style="font-size: 11px; color: #763CB4; font-weight: 700;">ORIGEN</span>
+          <div style="font-size: 20px; font-weight: 800; color: #521E89;">{{ pasabordoGenerado.origen }}</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 13px; font-weight: 800; color: #763CB4;">{{ pasabordoGenerado.vueloCodigo }}</div>
+          <div style="font-size: 22px; color: #AC6EEF;">➔</div>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 11px; color: #763CB4; font-weight: 700;">DESTINO</span>
+          <div style="font-size: 20px; font-weight: 800; color: #521E89;">{{ pasabordoGenerado.destino }}</div>
+        </div>
+      </div>
+
+      <!-- Datos del Pasajero, Vuelo (Salida y Llegada Local), Clase y Silla -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; background: #fff; border: 1px solid #e9d8fd; border-radius: 14px; padding: 16px 20px; margin-bottom: 16px;">
+        <div>
+          <span style="display: block; font-size: 10px; font-weight: 700; color: #763CB4;">PASAJERO</span>
+          <strong style="font-size: 14px; color: #1f1630;">{{ pasabordoGenerado.pasajero }}</strong>
+        </div>
+        <div>
+          <span style="display: block; font-size: 10px; font-weight: 700; color: #763CB4;">DOCUMENTO (DNI)</span>
+          <strong style="font-size: 14px; color: #1f1630;">{{ pasabordoGenerado.documento }}</strong>
+        </div>
+        <div>
+          <span style="display: block; font-size: 10px; font-weight: 700; color: #763CB4;">CÓDIGO RESERVA</span>
+          <strong style="font-size: 14px; color: #1f1630;">{{ pasabordoGenerado.codigoReserva }}</strong>
+        </div>
+
+        <div>
+          <span style="display: block; font-size: 10px; font-weight: 700; color: #763CB4;">FECHA Y HORA SALIDA</span>
+          <strong style="font-size: 13px; color: #1f1630;">{{ pasabordoGenerado.fechaSalida | date:'dd MMM yyyy' | uppercase }} • {{ pasabordoGenerado.horaSalida }} HRS</strong>
+        </div>
+        <div>
+          <span style="display: block; font-size: 10px; font-weight: 700; color: #763CB4;">LLEGADA (HORA LOCAL)</span>
+          <strong style="font-size: 13px; color: #1f1630;">{{ pasabordoGenerado.fechaLlegada | date:'dd MMM yyyy' | uppercase }} • {{ pasabordoGenerado.horaLlegada }} HRS</strong>
+        </div>
+        <div>
+          <span style="display: block; font-size: 10px; font-weight: 700; color: #763CB4;">PUERTA / GRUPO</span>
+          <strong style="font-size: 13px; color: #1f1630;">Puerta {{ pasabordoGenerado.puerta }} • {{ pasabordoGenerado.grupoAbordaje }}</strong>
+        </div>
+
+        <div>
+          <span style="display: block; font-size: 10px; font-weight: 700; color: #763CB4;">SILLA ASIGNADA</span>
+          <strong style="font-size: 22px; color: #521E89;">💺 {{ pasabordoGenerado.silla }}</strong>
+        </div>
+        <div>
+          <span style="display: block; font-size: 10px; font-weight: 700; color: #763CB4;">CORREO DE ENVÍO</span>
+          <strong style="font-size: 13px; color: #1f1630;">{{ pasabordoGenerado.correo || 'No registrado' }}</strong>
+        </div>
+        <div>
+          <span style="display: block; font-size: 10px; font-weight: 700; color: #763CB4;">CLASE / ESTADO</span>
+          <strong style="font-size: 13px; color: #15803D;">{{ pasabordoGenerado.clase }} ✓</strong>
+        </div>
+      </div>
+
+      <!-- Código de Barras Simulado -->
+      <div style="background: #fff; border: 1px dashed #AC6EEF; border-radius: 12px; padding: 12px; text-align: center; margin-bottom: 16px;">
+        <div style="height: 38px; max-width: 300px; margin: 0 auto 6px; background: repeating-linear-gradient(90deg, #1f1630 0px, #1f1630 3px, #fff 3px, #fff 6px, #1f1630 6px, #1f1630 7px, #fff 7px, #fff 11px);"></div>
+        <span style="font-size: 12px; letter-spacing: 3px; font-weight: 800; color: #521E89;">{{ pasabordoGenerado.codigoEmbarque }}</span>
+      </div>
+
+      <!-- Confirmación de envío por correo dentro del modal -->
+      <div *ngIf="mensajeModalCorreo"
+           style="background: #f3e8ff; border: 1px solid #AC6EEF; color: #521E89; padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 14px; text-align: center;">
+        {{ mensajeModalCorreo }}
+      </div>
+
+      <!-- Botones del Modal -->
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end;">
+        <button type="button" (click)="cerrarModalPasabordo()"
+                style="padding: 11px 18px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; color: #475569; font-weight: 700; cursor: pointer;">
+          Cerrar
+        </button>
+
+        <button type="button" (click)="enviarPasabordoPorCorreo()" [disabled]="enviandoCorreo"
+                style="padding: 11px 18px; border-radius: 10px; border: none; background: #763CB4; color: #fff; font-weight: 700; cursor: pointer;">
+          {{ enviandoCorreo ? 'Enviando...' : '✉️ Mandar al Correo' }}
+        </button>
+
+        <button type="button" (click)="descargarPasabordoPDF(pasabordoGenerado)"
+                style="padding: 11px 20px; border-radius: 10px; border: none; background: #521E89; color: #fff; font-weight: 700; cursor: pointer;">
+          📄 Descargar PDF
+        </button>
+      </div>
+    </div>
+
   </div>
 </div>

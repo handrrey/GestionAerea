@@ -474,8 +474,25 @@ export class MisReservasComponent implements OnInit {
     return diferenciaMs > 0 && diferenciaMs <= cuarentaYOchoHorasMs;
   }
 
-  irACheckIn(r: any): void {
+  irACheckIn(r: any, abrirPasabordo: boolean = false): void {
     localStorage.setItem('app_reserva_checkin', JSON.stringify(r));
-    this.router.navigate(['/check-in'], { state: { reserva: r } });
+    if (abrirPasabordo) {
+      localStorage.setItem('app_abrir_pasabordo_directo', 'true');
+    } else {
+      localStorage.removeItem('app_abrir_pasabordo_directo');
+    }
+    this.router.navigate(['/check-in'], { state: { reserva: r, abrirPasabordo } });
+  }
+
+  tieneCheckInRealizado(r: any): boolean {
+    if (r.estado !== 'PAGADO') return false;
+    if (r.checkinRealizado || r.checkin_realizado) return true;
+
+    try {
+      const checkinsLocales = JSON.parse(localStorage.getItem('app_checkins_confirmados') || '{}');
+      return Boolean(checkinsLocales[`RES_${r.idReserva}`] || checkinsLocales[`${r.idReserva}_1`]);
+    } catch {
+      return false;
+    }
   }
 }
