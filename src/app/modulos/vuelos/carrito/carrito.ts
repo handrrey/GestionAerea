@@ -22,7 +22,7 @@ export class CarritoComponent implements OnInit {
 
   idUsuario: number = 0;
   saldoBilletera: number = 0;
-  tarjetaUsuario: string = '**** 8765'; // Fallback real observado en la billetera
+  tarjetaUsuario: string = '**** 8765';
   tipoTarjeta: string = 'Visa (Crédito)';
   
   itemsCarrito: any[] = [];
@@ -65,9 +65,6 @@ export class CarritoComponent implements OnInit {
 
     this.billeteraService.obtenerSaldo(this.idUsuario).subscribe({
       next: (res: any) => {
-        console.log('>>> RESPUESTA BILLETERA BACKEND:', res);
-
-        // Si la respuesta trae la propiedad saldo o saldo_actual
         const saldoRespuesta = 
           res?.saldo ?? 
           res?.saldo_actual ?? 
@@ -78,7 +75,6 @@ export class CarritoComponent implements OnInit {
 
         this.saldoBilletera = Number(saldoRespuesta);
 
-        // Extracción de tarjeta si viene asociada en la respuesta
         const listaTarjetas = res?.tarjetas || res?.billetera?.tarjetas || [];
         if (Array.isArray(listaTarjetas) && listaTarjetas.length > 0) {
           const t = listaTarjetas[0];
@@ -135,11 +131,8 @@ export class CarritoComponent implements OnInit {
     this.procesando = true;
 
     const itemActual = this.itemsCarrito[0];
-
-    // 🟢 TRAZABILIDAD: Preserva el codigoReserva original generado al apartar el vuelo.
     const codigoReservaFinal = itemActual.codigoReserva || itemActual.codigo || ('CMP-' + Math.random().toString(36).substring(2, 7).toUpperCase());
 
-    // 🟢 Limpieza de pasajeros según el DTO estricto
     const pasajerosRecopilados: PasajeroForm[] = (itemActual.pasajeros || []).map((p: any) => ({
       nombreCompleto: (p.nombreCompleto || `${p.nombres || p.nombre || ''} ${p.apellidos || p.apellido || ''}`).trim(),
       documento: String(p.documento || p.dni || '').trim(),
@@ -152,7 +145,6 @@ export class CarritoComponent implements OnInit {
       edad: Number(p.edad || 18)
     }));
 
-    // 🟢 Payload estricto matching DTO (SIN idReserva para evitar el 400 ValidationPipe)
     const payload: any = {
       codigoReserva: codigoReservaFinal,
       idUsuario: Number(this.idUsuario),
@@ -167,18 +159,17 @@ export class CarritoComponent implements OnInit {
       pasajeros: pasajerosRecopilados
     };
 
-    console.log('>>> PAYLOAD PAGAR RESERVA LIMPIO:', payload);
-
     this.reservaService.crearReserva(payload).subscribe({
       next: () => {
         this.procesando = false;
-        this.mensajeExito = `¡Compra realizada con éxito! Código de confirmación: ${codigoReservaFinal}. Pasabordos generados.`;
+        this.mensajeExito = `¡Compra realizada con éxito! Código de confirmación: ${codigoReservaFinal}. Redirigiendo a tus reservas...`;
         this.vaciarCarrito();
         this.cdr.detectChanges();
         
+        // Redirección directa a Mis Reservas sin pasar por asignación de asientos
         setTimeout(() => {
-          this.router.navigate(['/asignacion-sillas']);
-        }, 250);
+          this.router.navigate(['/mis-reservas']);
+        }, 800);
       },
       error: (err: any) => {
         this.procesando = false;
