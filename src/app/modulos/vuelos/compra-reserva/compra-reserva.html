@@ -86,6 +86,12 @@
       </div>
     </div>
 
+    <!-- Alerta instantánea de regla de grupo (ej. todos menores de edad) -->
+    <div *ngIf="errorReglaGrupo"
+         style="background-color: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; font-weight: 600;">
+      ⚠️ {{ errorReglaGrupo }}
+    </div>
+
     <!-- Formularios Dinámicos para Pasajeros -->
     <div *ngFor="let p of pasajeros; let i = index" class="pasajero-block">
       <div class="section-title">
@@ -93,54 +99,128 @@
       </div>
 
       <div class="form-grid">
+        <!-- Nombres y Apellidos -->
         <div class="form-group full-width">
           <label>Nombres y Apellidos Completos</label>
-          <input type="text" [(ngModel)]="p.nombreCompleto" placeholder="Ej: Juan Antonio Pérez Gómez" required>
+          <input type="text"
+                 [(ngModel)]="p.nombreCompleto"
+                 (ngModelChange)="alCambiarCampo(i, 'nombreCompleto', false)"
+                 (blur)="alCambiarCampo(i, 'nombreCompleto', true)"
+                 [style.borderColor]="erroresPorPasajero[i]?.nombreCompleto ? '#DC2626' : ''"
+                 placeholder="Ej: Juan Antonio Pérez Gómez"
+                 required>
+          <small *ngIf="erroresPorPasajero[i]?.nombreCompleto" style="color: #DC2626; font-weight: 600; margin-top: 4px; display: block;">
+            ⚠️ {{ erroresPorPasajero[i]?.nombreCompleto }}
+          </small>
         </div>
 
+        <!-- Documento -->
         <div class="form-group">
           <label>Documento de Identidad (CC)</label>
-          <input type="text" [(ngModel)]="p.documento" placeholder="1098765432" required>
+          <input type="text"
+                 [(ngModel)]="p.documento"
+                 (ngModelChange)="alCambiarCampo(i, 'documento', false)"
+                 (blur)="alCambiarCampo(i, 'documento', true)"
+                 [style.borderColor]="erroresPorPasajero[i]?.documento ? '#DC2626' : ''"
+                 placeholder="1098765432"
+                 required>
+          <small *ngIf="erroresPorPasajero[i]?.documento" style="color: #DC2626; font-weight: 600; margin-top: 4px; display: block;">
+            ⚠️ {{ erroresPorPasajero[i]?.documento }}
+          </small>
         </div>
 
+        <!-- Fecha de Nacimiento -->
         <div class="form-group">
           <label>Fecha de Nacimiento</label>
-          <input type="date" 
-                 [(ngModel)]="p.fechaNacimiento" 
-                 [min]="fechaMinimaNacimiento" 
-                 [max]="fechaMaximaNacimiento" 
+          <input type="date"
+                 [(ngModel)]="p.fechaNacimiento"
+                 (ngModelChange)="alCambiarCampo(i, 'fechaNacimiento', true)"
+                 (blur)="alCambiarCampo(i, 'fechaNacimiento', true)"
+                 [style.borderColor]="erroresPorPasajero[i]?.fechaNacimiento ? '#DC2626' : ''"
+                 [min]="fechaMinimaNacimiento"
+                 [max]="fechaMaximaNacimiento"
                  required>
+          <small *ngIf="erroresPorPasajero[i]?.fechaNacimiento" style="color: #DC2626; font-weight: 600; margin-top: 4px; display: block;">
+            ⚠️ {{ erroresPorPasajero[i]?.fechaNacimiento }}
+          </small>
         </div>
 
+        <!-- Género -->
         <div class="form-group">
           <label>Género</label>
-          <select [(ngModel)]="p.genero" required>
+          <select [(ngModel)]="p.genero"
+                  (ngModelChange)="alCambiarCampo(i, 'genero', true)"
+                  (blur)="alCambiarCampo(i, 'genero', true)"
+                  [style.borderColor]="erroresPorPasajero[i]?.genero ? '#DC2626' : ''"
+                  required>
             <option value="" disabled selected>Seleccione género</option>
             <option value="Masculino">Masculino</option>
             <option value="Femenino">Femenino</option>
             <option value="Otro">Otro</option>
           </select>
+          <small *ngIf="erroresPorPasajero[i]?.genero" style="color: #DC2626; font-weight: 600; margin-top: 4px; display: block;">
+            ⚠️ {{ erroresPorPasajero[i]?.genero }}
+          </small>
         </div>
 
+        <!-- Teléfono -->
         <div class="form-group">
           <label>Teléfono de Contacto</label>
-          <input type="tel" [(ngModel)]="p.telefono" placeholder="3001234567" required>
+          <input type="tel"
+                 [(ngModel)]="p.telefono"
+                 (ngModelChange)="alCambiarCampo(i, 'telefono', false)"
+                 (blur)="alCambiarCampo(i, 'telefono', true)"
+                 [style.borderColor]="erroresPorPasajero[i]?.telefono ? '#DC2626' : ''"
+                 placeholder="3001234567"
+                 required>
+          <small *ngIf="erroresPorPasajero[i]?.telefono" style="color: #DC2626; font-weight: 600; margin-top: 4px; display: block;">
+            ⚠️ {{ erroresPorPasajero[i]?.telefono }}
+          </small>
         </div>
 
+        <!-- Correo -->
         <div class="form-group full-width">
           <label>Correo Electrónico</label>
-          <input type="email" [(ngModel)]="p.email" placeholder="correo@ejemplo.com" required>
+          <input type="email"
+                 [(ngModel)]="p.email"
+                 (ngModelChange)="alCambiarCampo(i, 'email', false)"
+                 (blur)="alCambiarCampo(i, 'email', true)"
+                 [style.borderColor]="erroresPorPasajero[i]?.email ? '#DC2626' : ''"
+                 placeholder="correo@ejemplo.com"
+                 required>
+          <small *ngIf="erroresPorPasajero[i]?.email" style="color: #DC2626; font-weight: 600; margin-top: 4px; display: block;">
+            ⚠️ {{ erroresPorPasajero[i]?.email }}
+          </small>
         </div>
 
-        <!-- Datos de Contacto General / Emergencia -->
+        <!-- Nombre Contacto -->
         <div class="form-group">
           <label>Nombre Contacto</label>
-          <input type="text" [(ngModel)]="p.nombreContacto" placeholder="Ej: María Gómez" required>
+          <input type="text"
+                 [(ngModel)]="p.nombreContacto"
+                 (ngModelChange)="alCambiarCampo(i, 'nombreContacto', false)"
+                 (blur)="alCambiarCampo(i, 'nombreContacto', true)"
+                 [style.borderColor]="erroresPorPasajero[i]?.nombreContacto ? '#DC2626' : ''"
+                 placeholder="Ej: María Gómez"
+                 required>
+          <small *ngIf="erroresPorPasajero[i]?.nombreContacto" style="color: #DC2626; font-weight: 600; margin-top: 4px; display: block;">
+            ⚠️ {{ erroresPorPasajero[i]?.nombreContacto }}
+          </small>
         </div>
 
+        <!-- Teléfono Contacto -->
         <div class="form-group">
           <label>Teléfono Contacto</label>
-          <input type="tel" [(ngModel)]="p.telefonoContacto" placeholder="3119876543" required>
+          <input type="tel"
+                 [(ngModel)]="p.telefonoContacto"
+                 (ngModelChange)="alCambiarCampo(i, 'telefonoContacto', false)"
+                 (blur)="alCambiarCampo(i, 'telefonoContacto', true)"
+                 [style.borderColor]="erroresPorPasajero[i]?.telefonoContacto ? '#DC2626' : ''"
+                 placeholder="3119876543"
+                 required>
+          <small *ngIf="erroresPorPasajero[i]?.telefonoContacto" style="color: #DC2626; font-weight: 600; margin-top: 4px; display: block;">
+            ⚠️ {{ erroresPorPasajero[i]?.telefonoContacto }}
+          </small>
         </div>
       </div>
     </div>

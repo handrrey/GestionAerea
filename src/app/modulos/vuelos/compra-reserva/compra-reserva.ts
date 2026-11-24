@@ -5,6 +5,17 @@ import { Router, RouterModule } from '@angular/router';
 import { CompraReservaService } from '../../../nucleo/servicios/compra-reserva';
 import { CompraReserva, PasajeroForm } from '../../../nucleo/modelos/compra-reserva.model';
 
+export interface ErroresPasajero {
+  nombreCompleto?: string;
+  documento?: string;
+  fechaNacimiento?: string;
+  genero?: string;
+  telefono?: string;
+  email?: string;
+  nombreContacto?: string;
+  telefonoContacto?: string;
+}
+
 @Component({
   selector: 'app-compra-reserva',
   standalone: true,
@@ -40,10 +51,15 @@ export class CompraReservaComponent implements OnInit {
 
   mensajeError: string = '';
   mensajeExito: string = '';
+  errorReglaGrupo: string = '';
 
   cantidadPasajeros: number = 1;
   claseSeleccionada: 'ECONOMICA' | 'PRIMERA_CLASE' = 'ECONOMICA';
   pasajeros: PasajeroForm[] = [];
+
+  // Mapas de errores y campos tocados por cada pasajero (índice 0..4)
+  erroresPorPasajero: ErroresPasajero[] = [];
+  camposTocados: Record<string, boolean>[] = [];
 
   fechaLimitePagoCalculada: Date = new Date();
   fechaMinimaNacimiento: string = '';
@@ -79,9 +95,6 @@ export class CompraReservaComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  /**
-   * 🟢 1. Detecta correctamente si el vuelo es NACIONAL o INTERNACIONAL
-   */
   private determinarTipoVuelo(navData: any, origen: string, destino: string): 'NACIONAL' | 'INTERNACIONAL' {
     const tipoExplicito = String(navData?.tipo || navData?.tipoVuelo || navData?.tipo_vuelo || '').toUpperCase().trim();
     if (tipoExplicito.includes('INTERNACIONAL')) return 'INTERNACIONAL';
@@ -89,7 +102,6 @@ export class CompraReservaComponent implements OnInit {
 
     const rutaCompleta = `${origen} ${destino}`.toLowerCase();
 
-    // Palabras clave y códigos IATA internacionales
     const destinosInternacionales = [
       'madrid', '(mad)', 'miami', '(mia)', 'nueva york', 'new york', '(nyc)', '(jfk)',
       'londres', 'london', '(lhr)', 'paris', '(cdg)', 'panama', '(pty)', 'mexico', '(mex)',
@@ -101,7 +113,6 @@ export class CompraReservaComponent implements OnInit {
       return 'INTERNACIONAL';
     }
 
-    // Si ambas ciudades son de Colombia, es NACIONAL
     const ciudadesColombia = [
       'bogota', 'bogotá', '(bog)', 'medellin', 'medellín', '(mde)',
       'cali', '(clo)', 'pereira', '(pei)', 'cartagena', '(ctg)',
@@ -180,12 +191,17 @@ export class CompraReservaComponent implements OnInit {
         telefonoContacto: '',
         edad: 18
       });
+      this.erroresPorPasajero.push({});
+      this.camposTocados.push({});
     }
 
     if (this.pasajeros.length > this.cantidadPasajeros) {
       this.pasajeros = this.pasajeros.slice(0, this.cantidadPasajeros);
+      this.erroresPorPasajero = this.erroresPorPasajero.slice(0, this.cantidadPasajeros);
+      this.camposTocados = this.camposTocados.slice(0, this.cantidadPasajeros);
     }
 
+    this.revalidarTodosEnTiempoReal(false);
     this.cdr.detectChanges();
   }
 
@@ -203,9 +219,6 @@ export class CompraReservaComponent implements OnInit {
     return Math.round(this.vuelo.precioBase * factorClase * this.cantidadPasajeros);
   }
 
-  /**
-   * Normaliza texto eliminando tildes, dobles espacios y mayúsculas para detectar nombres duplicados
-   */
   private normalizarTextoComparacion(texto: string): string {
     return String(texto || '')
       .trim()
@@ -216,10 +229,24 @@ export class CompraReservaComponent implements OnInit {
   }
 
   /**
-   * 🟢 2. Valida campos individuales + prohíbe pasajeros duplicados (cédula y nombres/apellidos)
+   * Se dispara al escribir o salir de cualquier campo: marca el campo como tocado y actualiza errores al instante
    */
-  validarPasajeros(): boolean {
+  alCambiarCampo(indice: number, campo: keyof ErroresPasajero, marcarTocado: boolean = true): void {
+    if (!this.camposTocados[indice]) this.camposTocados[indice] = {};
+    if (marcarTocado) {
+      this.camposTocados[indice][campo] = true;
+    }
+
     this.mensajeError = '';
+    this.revalidarTodosEnTiempoReal(false);
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Evalúa todos los campos de todos los pasajeros y actualiza los mensajes de error inmediatos.
+   * Si forzarTodosTocados = true (al pulsar Confirmar/Añadir), muestra todos los campos vacíos pendientes.
+   */
+  private revalidarTodosEnTiempoReal(forzarTodosTocados: boolean): boolean {
     const regexDocumento = /^\d{8,10}$/;
     const regexTelefono = /^\d{10}$/;
     const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -227,113 +254,174 @@ export class CompraReservaComponent implements OnInit {
 
     const documentosRegistrados = new Map<string, number>();
     const nombresRegistrados = new Map<string, number>();
+
+    let formularioValido = true;
     let totalAdultos = 0;
+    let totalFechasValidas = 0;
 
     for (let i = 0; i < this.pasajeros.length; i++) {
       const p = this.pasajeros[i];
       const numPasajero = i + 1;
+      const errores: ErroresPasajero = {};
 
-      // Validar nombre y apellido (debe tener al menos 2 palabras: nombre y apellido)
+      if (!this.camposTocados[i]) this.camposTocados[i] = {};
+      if (forzarTodosTocados) {
+        this.camposTocados[i] = {
+          nombreCompleto: true,
+          documento: true,
+          fechaNacimiento: true,
+          genero: true,
+          telefono: true,
+          email: true,
+          nombreContacto: true,
+          telefonoContacto: true
+        };
+      }
+
+      const tocado = this.camposTocados[i];
+
+      // 1. Nombres y Apellidos
       const nombreLimpio = String(p.nombreCompleto || '').trim().replace(/\s+/g, ' ');
       if (!nombreLimpio) {
-        this.mensajeError = `El nombre completo del Pasajero ${numPasajero} no puede estar vacío.`;
-        return false;
-      }
-      if (!regexSoloLetras.test(nombreLimpio)) {
-        this.mensajeError = `El nombre del Pasajero ${numPasajero} solo puede contener letras y espacios.`;
-        return false;
-      }
-      if (nombreLimpio.split(' ').length < 2) {
-        this.mensajeError = `Debes ingresar al menos un nombre y un apellido para el Pasajero ${numPasajero}.`;
-        return false;
+        formularioValido = false;
+        if (tocado['nombreCompleto']) {
+          errores.nombreCompleto = `El nombre completo del Pasajero ${numPasajero} es obligatorio.`;
+        }
+      } else if (!regexSoloLetras.test(nombreLimpio)) {
+        formularioValido = false;
+        errores.nombreCompleto = `Solo se permiten letras y espacios.`;
+      } else if (nombreLimpio.split(' ').length < 2) {
+        formularioValido = false;
+        errores.nombreCompleto = `Ingresa al menos un nombre y un apellido.`;
+      } else {
+        const nombreNormalizado = this.normalizarTextoComparacion(nombreLimpio);
+        if (nombresRegistrados.has(nombreNormalizado)) {
+          const pasajeroPrevio = nombresRegistrados.get(nombreNormalizado);
+          formularioValido = false;
+          errores.nombreCompleto = `Duplicado con el Pasajero ${pasajeroPrevio}. Un mismo pasajero no puede ocupar dos asientos.`;
+        } else {
+          nombresRegistrados.set(nombreNormalizado, numPasajero);
+        }
       }
 
-      // 🟢 Validar que no haya dos pasajeros con el mismo nombre y apellido
-      const nombreNormalizado = this.normalizarTextoComparacion(nombreLimpio);
-      if (nombresRegistrados.has(nombreNormalizado)) {
-        const pasajeroPrevio = nombresRegistrados.get(nombreNormalizado);
-        this.mensajeError = `⚠️ Regla de aerolínea: El pasajero "${nombreLimpio}" ya está registrado en el Pasajero ${pasajeroPrevio}. Un mismo pasajero no puede ocupar dos asientos en el mismo vuelo.`;
-        return false;
-      }
-      nombresRegistrados.set(nombreNormalizado, numPasajero);
-
-      // Validar documento
+      // 2. Documento de Identidad
       const docLimpio = String(p.documento || '').trim();
       if (!docLimpio) {
-        this.mensajeError = `El documento del Pasajero ${numPasajero} no puede estar vacío.`;
-        return false;
-      }
-      if (!regexDocumento.test(docLimpio)) {
-        this.mensajeError = `Documento inválido en el Pasajero ${numPasajero}. Debe tener obligatoriamente entre 8 y 10 dígitos.`;
-        return false;
-      }
-
-      // 🟢 Validar que no haya dos pasajeros con la misma cédula/documento
-      if (documentosRegistrados.has(docLimpio)) {
+        formularioValido = false;
+        if (tocado['documento']) {
+          errores.documento = `El documento es obligatorio.`;
+        }
+      } else if (!regexDocumento.test(docLimpio)) {
+        formularioValido = false;
+        errores.documento = `Debe tener entre 8 y 10 dígitos numéricos.`;
+      } else if (documentosRegistrados.has(docLimpio)) {
         const pasajeroPrevio = documentosRegistrados.get(docLimpio);
-        this.mensajeError = `⚠️ Regla de aerolínea: La cédula/documento ${docLimpio} del Pasajero ${numPasajero} está duplicada con el Pasajero ${pasajeroPrevio}. Un pasajero no puede tener dos asientos.`;
-        return false;
+        formularioValido = false;
+        errores.documento = `La cédula ${docLimpio} ya está registrada en el Pasajero ${pasajeroPrevio}.`;
+      } else {
+        documentosRegistrados.set(docLimpio, numPasajero);
       }
-      documentosRegistrados.set(docLimpio, numPasajero);
 
+      // 3. Fecha de Nacimiento y Edad
       if (!p.fechaNacimiento || p.fechaNacimiento.trim() === '') {
-        this.mensajeError = `La fecha de nacimiento del Pasajero ${numPasajero} es requerida.`;
-        return false;
+        formularioValido = false;
+        if (tocado['fechaNacimiento']) {
+          errores.fechaNacimiento = `La fecha de nacimiento es obligatoria.`;
+        }
+      } else {
+        const edadCalculada = this.calcularEdad(p.fechaNacimiento);
+        if (edadCalculada < 0 || edadCalculada > 100 || isNaN(edadCalculada)) {
+          formularioValido = false;
+          errores.fechaNacimiento = `Fecha inválida (edad debe estar entre 0 y 100 años).`;
+        } else {
+          p.edad = edadCalculada;
+          totalFechasValidas++;
+          if (edadCalculada >= 18) totalAdultos++;
+        }
       }
 
-      const edadCalculada = this.calcularEdad(p.fechaNacimiento);
-      if (edadCalculada < 0 || edadCalculada > 100 || isNaN(edadCalculada)) {
-        this.mensajeError = `Fecha de nacimiento inválida para el Pasajero ${numPasajero}. No puede ser mayor de 100 años.`;
-        return false;
-      }
-
-      p.edad = edadCalculada;
-      if (edadCalculada >= 18) totalAdultos++;
-
+      // 4. Género
       if (!p.genero || p.genero.trim() === '') {
-        this.mensajeError = `Selecciona el género del Pasajero ${numPasajero}.`;
-        return false;
+        formularioValido = false;
+        if (tocado['genero']) {
+          errores.genero = `Selecciona un género.`;
+        }
       }
-      if (!p.telefono || p.telefono.trim() === '') {
-        this.mensajeError = `El teléfono del Pasajero ${numPasajero} no puede estar vacío.`;
-        return false;
+
+      // 5. Teléfono
+      const telLimpio = String(p.telefono || '').trim();
+      if (!telLimpio) {
+        formularioValido = false;
+        if (tocado['telefono']) {
+          errores.telefono = `El teléfono es obligatorio.`;
+        }
+      } else if (!regexTelefono.test(telLimpio)) {
+        formularioValido = false;
+        errores.telefono = `Debe tener exactamente 10 dígitos.`;
       }
-      if (!regexTelefono.test(p.telefono.trim())) {
-        this.mensajeError = `El teléfono del Pasajero ${numPasajero} es inválido. Debe tener obligatoriamente 10 dígitos.`;
-        return false;
+
+      // 6. Correo Electrónico
+      const emailLimpio = String(p.email || '').trim();
+      if (!emailLimpio) {
+        formularioValido = false;
+        if (tocado['email']) {
+          errores.email = `El correo electrónico es obligatorio.`;
+        }
+      } else if (!regexEmail.test(emailLimpio)) {
+        formularioValido = false;
+        errores.email = `Formato de correo inválido (ej: usuario@dominio.com).`;
       }
-      if (!p.email || p.email.trim() === '') {
-        this.mensajeError = `El correo electrónico del Pasajero ${numPasajero} no puede estar vacío.`;
-        return false;
+
+      // 7. Nombre Contacto
+      const contactoLimpio = String(p.nombreContacto || '').trim();
+      if (!contactoLimpio) {
+        formularioValido = false;
+        if (tocado['nombreContacto']) {
+          errores.nombreContacto = `El nombre de contacto es obligatorio.`;
+        }
+      } else if (!regexSoloLetras.test(contactoLimpio)) {
+        formularioValido = false;
+        errores.nombreContacto = `Solo se permiten letras y espacios.`;
       }
-      if (!regexEmail.test(p.email.trim())) {
-        this.mensajeError = `El correo electrónico del Pasajero ${numPasajero} es inválido.`;
-        return false;
+
+      // 8. Teléfono Contacto
+      const telContactoLimpio = String(p.telefonoContacto || '').trim();
+      if (!telContactoLimpio) {
+        formularioValido = false;
+        if (tocado['telefonoContacto']) {
+          errores.telefonoContacto = `El teléfono de contacto es obligatorio.`;
+        }
+      } else if (!regexTelefono.test(telContactoLimpio)) {
+        formularioValido = false;
+        errores.telefonoContacto = `Debe tener exactamente 10 dígitos.`;
       }
-      if (!p.nombreContacto || p.nombreContacto.trim() === '') {
-        this.mensajeError = `El nombre de contacto del Pasajero ${numPasajero} no puede estar vacío.`;
-        return false;
-      }
-      if (!regexSoloLetras.test(p.nombreContacto.trim())) {
-        this.mensajeError = `El nombre de contacto del Pasajero ${numPasajero} solo puede contener letras y espacios.`;
-        return false;
-      }
-      if (!p.telefonoContacto || p.telefonoContacto.trim() === '') {
-        this.mensajeError = `El teléfono de contacto del Pasajero ${numPasajero} no puede estar vacío.`;
-        return false;
-      }
-      if (!regexTelefono.test(p.telefonoContacto.trim())) {
-        this.mensajeError = `El teléfono de contacto del Pasajero ${numPasajero} es inválido. Debe tener obligatoriamente 10 dígitos.`;
-        return false;
-      }
+
+      this.erroresPorPasajero[i] = errores;
     }
 
-    if (totalAdultos === 0) {
-      this.mensajeError = '⚠️ Un menor de edad no puede viajar solo. Debe haber al menos un pasajero adulto (mayor de 18 años) en el grupo.';
-      return false;
+    // Validación en tiempo real de adulto responsable cuando ya ingresaron las fechas
+    if (totalFechasValidas === this.pasajeros.length && totalAdultos === 0) {
+      formularioValido = false;
+      this.errorReglaGrupo = 'Un menor de edad no puede viajar solo. Debe haber al menos un pasajero adulto (mayor de 18 años) en el grupo.';
+    } else if (totalFechasValidas > 0 && totalAdultos === 0 && forzarTodosTocados) {
+      formularioValido = false;
+      this.errorReglaGrupo = 'Un menor de edad no puede viajar solo. Debe haber al menos un pasajero adulto (mayor de 18 años) en el grupo.';
+    } else {
+      this.errorReglaGrupo = '';
     }
 
-    return true;
+    return formularioValido;
+  }
+
+  validarPasajeros(): boolean {
+    this.mensajeError = '';
+    const esValido = this.revalidarTodosEnTiempoReal(true);
+
+    if (!esValido) {
+      this.mensajeError = this.errorReglaGrupo || 'Revisa los campos marcados en rojo antes de continuar.';
+    }
+
+    return esValido;
   }
 
   private calcularEdad(fechaNacimientoStr: string): number {
