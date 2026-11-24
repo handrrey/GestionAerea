@@ -57,12 +57,15 @@ export class MisReservasComponent implements OnInit {
 
     let mapaVuelosLocal: any = {};
     let mapaAsientosLocal: any = {};
+    let mapaClasesLocal: any = {};
     try {
       mapaVuelosLocal = JSON.parse(localStorage.getItem('app_mapa_vuelos_reservados') || '{}');
       mapaAsientosLocal = JSON.parse(localStorage.getItem('app_asientos_por_reserva') || '{}');
+      mapaClasesLocal = JSON.parse(localStorage.getItem('app_clases_por_reserva') || '{}');
     } catch (e) {
       mapaVuelosLocal = {};
       mapaAsientosLocal = {};
+      mapaClasesLocal = {};
     }
 
     forkJoin({
@@ -84,6 +87,7 @@ export class MisReservasComponent implements OnInit {
         this.reservas = lista.map((r: any) => {
           const idReservaReal = Number(r.id_reserva || r.idReserva || r.id || 0);
           const idVueloReal = Number(r.id_vuelo || r.idVuelo || r.vuelo?.id_vuelo || r.vuelo?.idVuelo || 0);
+          const codigoReservaReal = r.codigo_reserva || r.codigoReserva || 'RSV-000';
 
           const v = {
             ...(mapaVuelosLocal[idVueloReal] || {}),
@@ -92,11 +96,23 @@ export class MisReservasComponent implements OnInit {
           };
 
           const montoTotal = Number(r.monto_total || r.montoTotal || 0);
-          const claseNorm = String(r.clase || 'ECONOMICA').toUpperCase();
-
           const listaPasajeros = Array.isArray(r.pasajeros) ? r.pasajeros : [];
-          let cantidadReal = Number(r.cantidad_pasajeros || r.cantidadPasajeros || 0);
 
+          // 1. Obtener la clase desde localStorage (si se guardó al comprar/reservar) o desde el backend
+          const claseGuardadaLocal = mapaClasesLocal[idReservaReal] || mapaClasesLocal[codigoReservaReal];
+          const claseBackend =
+            r.clase ||
+            r.clase_boleto ||
+            r.claseBoleto ||
+            r.tipo_clase ||
+            r.tipoClase ||
+            listaPasajeros[0]?.clase ||
+            '';
+
+          let claseNorm = String(claseGuardadaLocal || claseBackend || '').toUpperCase();
+
+          // 2. Calcular la cantidad real de pasajeros
+          let cantidadReal = Number(r.cantidad_pasajeros || r.cantidadPasajeros || 0);
           if (listaPasajeros.length > 0) {
             cantidadReal = listaPasajeros.length;
           } else if (cantidadReal <= 1 && montoTotal > 0) {
@@ -111,7 +127,25 @@ export class MisReservasComponent implements OnInit {
           }
           if (cantidadReal < 1) cantidadReal = 1;
 
-          const asientosGuardados = mapaAsientosLocal[idReservaReal] || mapaAsientosLocal[r.codigo_reserva || r.codigoReserva];
+          // 3. Verificar contra el precio de Primera Clase del vuelo por si el backend omitió el campo clase
+          const precioPrimera = Number(v.costoPrimera || v.costo_primera || v.precioPrimera || 0);
+          const precioEconomico = Number(v.costoEconomico || v.costo_economico || v.precioEconomico || v.precioBase || 0);
+
+          if ((!claseNorm || claseNorm === 'ECONOMICA') && precioPrimera > 0 && montoTotal > 0) {
+            const unitarioPagado = montoTotal / cantidadReal;
+            if (
+              Math.abs(unitarioPagado - precioPrimera) <= 100 ||
+              (precioEconomico > 0 && unitarioPagado > precioEconomico * 1.2)
+            ) {
+              claseNorm = 'PRIMERA_CLASE';
+            }
+          }
+
+          if (!claseNorm) {
+            claseNorm = 'ECONOMICA';
+          }
+
+          const asientosGuardados = mapaAsientosLocal[idReservaReal] || mapaAsientosLocal[codigoReservaReal];
           const asientosLista = this.extraerAsientos(r, listaPasajeros, asientosGuardados, cantidadReal, claseNorm);
 
           const fechaSalidaISO = this.combinarFechaHora(
@@ -124,21 +158,26 @@ export class MisReservasComponent implements OnInit {
             v.horaLlegada || v.hora_llegada
           );
 
+          const origenStr = v.origen || v.ciudadOrigen || '-';
+          const destinoStr = v.destino || v.ciudadDestino || '-';
+          const tipoVueloStr = v.tipoVuelo || v.tipo_vuelo || v.tipo || this.inferirTipoVuelo(origenStr, destinoStr);
+
           return {
             idReserva: idReservaReal,
             idVuelo: idVueloReal,
-            codigo: r.codigo_reserva || r.codigoReserva || 'RSV-000',
+            codigo: codigoReservaReal,
             monto: montoTotal,
             estado: String(r.estado || 'PENDIENTE').toUpperCase(),
             fechaReserva: r.fecha_reserva || r.fechaReserva,
             fechaLimite: r.fecha_limite_pago || r.fechaLimitePago,
             cantidadPasajeros: cantidadReal,
             clase: claseNorm,
+            tipoVuelo: tipoVueloStr,
             pasajeros: listaPasajeros,
             asientos: asientosLista,
             vueloCodigo: v.codigoVuelo || v.codigo_vuelo || v.codigo || (idVueloReal ? `GA-${idVueloReal}` : 'GA-000'),
-            origen: v.origen || v.ciudadOrigen || '-',
-            destino: v.destino || v.ciudadDestino || '-',
+            origen: origenStr,
+            destino: destinoStr,
             duracion: v.duracion || v.duracionVuelo || '-',
             fechaSalida: fechaSalidaISO,
             fechaLlegada: fechaLlegadaISO
@@ -155,6 +194,15 @@ export class MisReservasComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  private inferirTipoVuelo(origen: string, destino: string): string {
+    const ruta = `${origen} ${destino}`.toLowerCase();
+    const internacionales = [
+      'madrid', '(mad)', 'miami', '(mia)', 'nueva york', 'new york', '(nyc)',
+      'londres', 'london', '(lon)', 'buenos aires', '(bue)', 'panama', 'lima', 'quito'
+    ];
+    return internacionales.some(c => ruta.includes(c)) ? 'Internacional' : 'Nacional';
   }
 
   private combinarFechaHora(fechaRaw: any, horaRaw: any): string {
@@ -212,6 +260,18 @@ export class MisReservasComponent implements OnInit {
   }
 
   irAAsignarSillas(r: any): void {
+    const pasajerosNormalizados = (r.pasajeros.length > 0
+      ? r.pasajeros
+      : r.asientos.map((silla: string, idx: number) => ({
+          nombreCompleto: `Pasajero ${idx + 1}`,
+          sillaActual: silla
+        }))
+    ).map((p: any, idx: number) => ({
+      ...p,
+      clase: r.clase,
+      sillaActual: p.sillaActual || p.silla || p.numeroSilla || p.numero_silla || r.asientos[idx] || ''
+    }));
+
     const contextoVuelo = {
       idReserva: r.idReserva,
       codigoReserva: r.codigo,
@@ -219,16 +279,12 @@ export class MisReservasComponent implements OnInit {
       vuelo: {
         idVuelo: r.idVuelo,
         codigo: r.vueloCodigo,
+        tipo: r.tipoVuelo,
+        tipoVuelo: r.tipoVuelo,
         origen: r.origen,
         destino: r.destino
       },
-      pasajeros: r.pasajeros.length > 0
-        ? r.pasajeros
-        : r.asientos.map((silla: string, idx: number) => ({
-            nombreCompleto: `Pasajero ${idx + 1}`,
-            clase: r.clase,
-            sillaActual: silla
-          }))
+      pasajeros: pasajerosNormalizados
     };
 
     localStorage.setItem('app_vuelo_para_sillas', JSON.stringify(contextoVuelo));
@@ -355,16 +411,13 @@ export class MisReservasComponent implements OnInit {
     this.mensajeError = '';
     this.mensajeExito = '';
 
-    // 1. Leer saldo previo de la billetera en BD para evitar doble abono si el backend ya lo reembolsa
     this.billeteraService.obtenerEstadoBilletera(this.idUsuario).pipe(catchError(() => of(null))).subscribe((estadoPrevio: any) => {
       const billeteraPrevia = estadoPrevio?.billetera || estadoPrevio;
       const saldoAntes = Number(billeteraPrevia?.saldo ?? 0);
       const idTarjetaRespaldo = Number(estadoPrevio?.tarjetas?.[0]?.id_tarjeta || estadoPrevio?.tarjetas?.[0]?.idTarjeta || 0);
 
-      // 2. Ejecutar la cancelación en CompraReservaService
       this.reservaService.cancelarReserva(r.idReserva).subscribe({
         next: () => {
-          // 3. Verificar si el backend ya sumó el reembolso al saldo en BD
           this.billeteraService.obtenerEstadoBilletera(this.idUsuario).pipe(catchError(() => of(null))).subscribe((estadoDespues: any) => {
             const billeteraDespues = estadoDespues?.billetera || estadoDespues;
             const saldoDespues = Number(billeteraDespues?.saldo ?? saldoAntes);
@@ -372,7 +425,6 @@ export class MisReservasComponent implements OnInit {
             const yaReembolsadoEnBackend = saldoDespues >= (saldoAntes + montoReembolso) && montoReembolso > 0;
 
             if (!yaReembolsadoEnBackend && montoReembolso > 0) {
-              // Abonar el reembolso usando el servicio real de billetera
               this.billeteraService.recargarSaldo(this.idUsuario, montoReembolso, idTarjetaRespaldo)
                 .pipe(catchError(() => of(null)))
                 .subscribe(() => {

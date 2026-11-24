@@ -161,12 +161,18 @@ export class CarritoComponent implements OnInit {
 
     this.reservaService.crearReserva(payload).subscribe({
       next: () => {
+        // Guardar la clase real comprada por código de reserva
+        try {
+          const mapaClases = JSON.parse(localStorage.getItem('app_clases_por_reserva') || '{}');
+          mapaClases[codigoReservaFinal] = String(itemActual.clase || 'ECONOMICA').toUpperCase();
+          localStorage.setItem('app_clases_por_reserva', JSON.stringify(mapaClases));
+        } catch {}
+
         this.procesando = false;
         this.mensajeExito = `¡Compra realizada con éxito! Código de confirmación: ${codigoReservaFinal}. Redirigiendo a tus reservas...`;
         this.vaciarCarrito();
         this.cdr.detectChanges();
         
-        // Redirección directa a Mis Reservas sin pasar por asignación de asientos
         setTimeout(() => {
           this.router.navigate(['/mis-reservas']);
         }, 800);

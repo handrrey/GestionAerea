@@ -2,7 +2,8 @@ import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { SillaService } from '../../../nucleo/servicios/asignacion-sillas';
-import { Silla, EstadoSillaBD } from '../../../nucleo/modelos/asignacion-sillas.model';
+import { VuelosService } from '../../../nucleo/servicios/vuelos';
+import { Silla } from '../../../nucleo/modelos/asignacion-sillas.model';
 
 interface PasajeroConSilla {
   idPasajero?: number;
@@ -36,7 +37,8 @@ interface Asiento {
 export class AsignacionSillasComponent implements OnInit {
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
-  private sillaService = inject(SillaService); // 🟢 Inyección del servicio
+  private sillaService = inject(SillaService);
+  private vuelosService = inject(VuelosService);
 
   idVueloReal: number = 0;
   idReservaReal: number = 0;
@@ -77,7 +79,7 @@ export class AsignacionSillasComponent implements OnInit {
     const origen = vueloInner.origen || vueloInner.ciudadOrigen || vueloInner.ciudad_origen || itemRaw.origen || 'Pereira (PEI)';
     const destino = vueloInner.destino || vueloInner.ciudadDestino || vueloInner.ciudad_destino || itemRaw.destino || 'Nueva York (NYC)';
     const tipoVueloRaw = vueloInner.tipo || vueloInner.tipoVuelo || vueloInner.tipo_vuelo || itemRaw.tipo || '';
-    const claseContratada = datosContexto?.clase || itemRaw.clase || vueloInner.clase || 'PRIMERA';
+    const claseContratada = datosContexto?.clase || itemRaw.clase || vueloInner.clase || 'ECONOMICA';
 
     this.vueloInfo = {
       codigo: codigoVuelo,
@@ -95,9 +97,9 @@ export class AsignacionSillasComponent implements OnInit {
     // 1. Generar la estructura base de la cabina
     this.generarMapaCabina();
 
-    // 2. 🟢 Sincronizar las sillas reservadas en la BD real si existe idVuelo
+    // 2. Sincronizar datos reales del vuelo (tipoVuelo / capacidadTotal) y sillas en BD
     if (this.idVueloReal) {
-      this.consultarSillasBD();
+      this.sincronizarInfoVueloYSillasBD();
     }
   }
 
@@ -105,14 +107,14 @@ export class AsignacionSillasComponent implements OnInit {
     const origenStr = (this.vueloInfo?.origen || '').toLowerCase();
     const destinoStr = (this.vueloInfo?.destino || '').toLowerCase();
     const tipoStr = (this.vueloInfo?.tipo || '').toLowerCase();
+    const ruta = `${origenStr} ${destinoStr}`;
 
-    if (
-      tipoStr.includes('internacional') || 
-      destinoStr.includes('madrid') || destinoStr.includes('mad') ||
-      destinoStr.includes('york') || destinoStr.includes('nyc') ||
-      destinoStr.includes('miami') || destinoStr.includes('mia') ||
-      origenStr.includes('madrid') || origenStr.includes('york')
-    ) {
+    const palabrasInternacionales = [
+      'internacional', 'madrid', '(mad)', 'york', '(nyc)', 'miami', '(mia)',
+      'londres', 'london', '(lon)', 'buenos aires', '(bue)', 'panama', 'lima', 'quito'
+    ];
+
+    if (palabrasInternacionales.some(p => tipoStr.includes(p) || ruta.includes(p))) {
       this.esVueloNacional = false;
     } else {
       this.esVueloNacional = true;
@@ -123,14 +125,32 @@ export class AsignacionSillasComponent implements OnInit {
   }
 
   private cargarPasajeros(lista: any[], claseGlobalReserva: string): void {
-    const claseReservaNormalizada = String(claseGlobalReserva).toUpperCase().includes('PRIMERA') ? 'PRIMERA' : 'ECONOMICA';
+    const claseReservaNormalizada: 'PRIMERA' | 'ECONOMICA' =
+      String(claseGlobalReserva).toUpperCase().includes('PRIMERA') ? 'PRIMERA' : 'ECONOMICA';
+
+    // Verificar si ya existen asientos guardados en cache local para esta reserva
+    let sillasCache: string[] = [];
+    try {
+      const mapaAsientos = JSON.parse(localStorage.getItem('app_asientos_por_reserva') || '{}');
+      sillasCache = mapaAsientos[this.idReservaReal] || mapaAsientos[this.codigoReserva] || [];
+    } catch {}
+
+    const letras = ['A', 'B', 'C', 'D', 'E', 'F'];
 
     this.pasajeros = (lista || []).map((p, index) => {
-      const clasePasajero = String(p.clase || claseReservaNormalizada).toUpperCase().includes('PRIMERA') ? 'PRIMERA' : 'ECONOMICA';
+      const clasePasajero: 'PRIMERA' | 'ECONOMICA' =
+        String(p.clase || claseReservaNormalizada).toUpperCase().includes('PRIMERA') ? 'PRIMERA' : 'ECONOMICA';
 
-      let sillaInicial = p.sillaActual || p.idSilla || p.silla;
-      if (!sillaInicial) {
-        sillaInicial = clasePasajero === 'PRIMERA' ? `${index + 1}A` : (this.esVueloNacional ? `${index + 6}A` : `${index + 10}A`);
+      let sillaInicial = sillasCache[index] || p.sillaActual || p.numeroSilla || p.numero_silla || p.silla;
+      const filaActual = sillaInicial ? parseInt(String(sillaInicial), 10) : 0;
+      const limiteFilaPrimera = this.esVueloNacional ? 4 : 8;
+
+      // Si no tiene silla o la silla por defecto no corresponde a su clase, asignar una válida de su cabina
+      if (!sillaInicial || (clasePasajero === 'PRIMERA' && filaActual > limiteFilaPrimera) || (clasePasajero === 'ECONOMICA' && filaActual <= limiteFilaPrimera)) {
+        const filaBase = clasePasajero === 'PRIMERA' ? 1 : (this.esVueloNacional ? 6 : 10);
+        const fila = filaBase + Math.floor(index / 6);
+        const letra = letras[index % 6];
+        sillaInicial = `${fila}${letra}`;
       }
 
       const nombre = (p.nombreCompleto || `${p.nombres || p.nombre || ''} ${p.apellidos || p.apellido || ''}`).trim() || `Pasajero ${index + 1}`;
@@ -140,7 +160,7 @@ export class AsignacionSillasComponent implements OnInit {
         nombreCompleto: nombre,
         documento: String(p.documento || p.dni || p.cedula || ''),
         clase: clasePasajero,
-        sillaActual: sillaInicial,
+        sillaActual: String(sillaInicial),
         sillaNueva: undefined,
         cambioRealizado: false
       };
@@ -152,7 +172,7 @@ export class AsignacionSillasComponent implements OnInit {
         nombreCompleto: 'Pasajero Titular',
         documento: '',
         clase: claseReservaNormalizada,
-        sillaActual: claseReservaNormalizada === 'PRIMERA' ? '1A' : '6A',
+        sillaActual: claseReservaNormalizada === 'PRIMERA' ? '1A' : (this.esVueloNacional ? '6A' : '10A'),
         sillaNueva: undefined,
         cambioRealizado: false
       }];
@@ -166,14 +186,14 @@ export class AsignacionSillasComponent implements OnInit {
     const clasePasajeroActual = pasajeroActual?.clase || 'ECONOMICA';
 
     const totalSillasMax = this.esVueloNacional ? 150 : 250;
-    const limitePrimeraClase = this.esVueloNacional ? 26 : 50;
+    const limitePrimeraClase = this.esVueloNacional ? 25 : 50;
 
     let contadorSilla = 0;
     const letrasOrdenadas = ['A', 'B', 'C', 'D', 'E', 'F'];
-    const sillasReservadasOcupadas = ['2C', '3D', '7F', '12A', '15B', '30C']; // Muestra estática preventiva
+    const sillasReservadasOcupadas = ['2C', '3D', '7F', '12A', '15B', '30C'];
 
-    for (let f of this.filas) {
-      for (let l of letrasOrdenadas) {
+    for (const f of this.filas) {
+      for (const l of letrasOrdenadas) {
         contadorSilla++;
 
         if (contadorSilla > totalSillasMax) continue;
@@ -214,9 +234,32 @@ export class AsignacionSillasComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  // 🟢 Consultar disponibilidad real a NestJS
-  consultarSillasBD(): void {
+  sincronizarInfoVueloYSillasBD(): void {
     this.cargandoBackend = true;
+
+    // 1. Obtener datos exactos del vuelo (tipoVuelo, capacidadTotal, origen, destino)
+    this.vuelosService.obtenerVuelos().subscribe({
+      next: (listaVuelos: any[]) => {
+        const vueloBD = (listaVuelos || []).find(
+          (v: any) => Number(v.idVuelo || v.id_vuelo || v.id) === this.idVueloReal
+        );
+
+        if (vueloBD) {
+          this.vueloInfo = {
+            ...this.vueloInfo,
+            codigo: vueloBD.codigoVuelo || vueloBD.codigo || this.vueloInfo.codigo,
+            origen: vueloBD.origen || this.vueloInfo.origen,
+            destino: vueloBD.destino || this.vueloInfo.destino,
+            tipo: vueloBD.tipoVuelo || vueloBD.tipo || this.vueloInfo.tipo
+          };
+          this.determinarTipoVuelo();
+          this.generarMapaCabina();
+        }
+      },
+      error: () => {}
+    });
+
+    // 2. Consultar sillas en BD
     this.sillaService.obtenerSillasPorVuelo(this.idVueloReal).subscribe({
       next: (sillasBD: Silla[]) => {
         this.cargandoBackend = false;
@@ -225,7 +268,7 @@ export class AsignacionSillasComponent implements OnInit {
             if (this.mapaSillas.has(s.numeroSilla)) {
               const itemMap = this.mapaSillas.get(s.numeroSilla)!;
               itemMap.idSilla = s.idSilla;
-              
+
               if (s.estado === 'RESERVADO' || s.estado === 'OCUPADA') {
                 itemMap.estado = 'reserved';
               } else if (s.estado === 'NO_DISPONIBLE') {
@@ -238,7 +281,7 @@ export class AsignacionSillasComponent implements OnInit {
       },
       error: (err) => {
         this.cargandoBackend = false;
-        console.warn('Backend de sillas no disponible aún, usando mapa estático local.', err);
+        console.warn('Backend de sillas no disponible aún, usando mapa local.', err);
       }
     });
   }
@@ -299,7 +342,6 @@ export class AsignacionSillasComponent implements OnInit {
     this.generarMapaCabina();
   }
 
-  // 🟢 Confirmar e Intentar enviar la asignación al backend
   confirmarCambioSillas(): void {
     const pasajerosConCambio = this.pasajeros.filter(p => p.sillaNueva && p.sillaNueva !== p.sillaActual);
 
@@ -309,7 +351,6 @@ export class AsignacionSillasComponent implements OnInit {
       return;
     }
 
-    // Persistir localmente de inmediato
     this.pasajeros.forEach(p => {
       if (p.sillaNueva && p.sillaNueva !== p.sillaActual) {
         p.sillaActual = p.sillaNueva;
@@ -318,7 +359,6 @@ export class AsignacionSillasComponent implements OnInit {
       }
     });
 
-    // 🟢 Sincronizar asientos actualizados en localStorage para que se vean al instante en Mis Reservas
     try {
       const mapaAsientos = JSON.parse(localStorage.getItem('app_asientos_por_reserva') || '{}');
       const sillasActualizadas = this.pasajeros.map(p => p.sillaActual);
@@ -329,7 +369,6 @@ export class AsignacionSillasComponent implements OnInit {
       console.error('Error al sincronizar sillas en localStorage:', e);
     }
 
-    // Intentar enviar al backend el primer cambio realizado
     const pCambio = pasajerosConCambio[0];
     const dto = {
       idReserva: this.idReservaReal,
@@ -344,7 +383,6 @@ export class AsignacionSillasComponent implements OnInit {
         this.router.navigate(['/mis-reservas']);
       },
       error: () => {
-        // Fallback elegante en caso de que tu compañero aún no monte la ruta POST
         alert('¡Asignación de sillas confirmada localmente!');
         this.router.navigate(['/mis-reservas']);
       }

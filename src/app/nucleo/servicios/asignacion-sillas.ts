@@ -11,13 +11,15 @@
     private apiUrl = 'http://localhost:3000/appV1';
 
     /**
-     * Obtiene la matriz completa de sillas registradas para un vuelo específico
-     * Mapea en camelCase y normaliza los 4 estados requeridos por la UI
+     * Obtiene la matriz de sillas consultando el endpoint real del vuelo: GET /appV1/vuelos/:id
      */
     obtenerSillasPorVuelo(idVuelo: number): Observable<Silla[]> {
-        return this.http.get<any[]>(`${this.apiUrl}/sillas/vuelo/${idVuelo}`).pipe(
-        map(sillasBackend => {
-            const lista = Array.isArray(sillasBackend) ? sillasBackend : [];
+        return this.http.get<any>(`${this.apiUrl}/vuelos/${idVuelo}`).pipe(
+        map(respuesta => {
+            const lista = Array.isArray(respuesta)
+            ? respuesta
+            : (respuesta?.sillas || respuesta?.asientos || respuesta?.vuelo?.sillas || []);
+
             return lista.map((s: any) => {
             const estadoOriginal = String(s.estado || 'DISPONIBLE').toUpperCase();
             let estadoNormalizado: EstadoSillaBD = 'DISPONIBLE';
