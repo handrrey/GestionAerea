@@ -2,6 +2,8 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { VuelosService, FiltrosBusqueda } from '../../../nucleo/servicios/vuelos';
 import { Vuelo } from '../../../nucleo/modelos/vuelos.model';
 
@@ -43,15 +45,14 @@ export class BuscarVuelosParametrizadosComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
-      if (params['origen']) this.origenSeleccionado = params['origen'];
-      if (params['destino']) this.destinoSeleccionado = params['destino'];
-      if (params['fecha']) this.fechaIda = params['fecha'];
-      if (params['precioMaximo']) this.rangoPrecio = params['precioMaximo'];
+      this.origenSeleccionado = params['origen'] || '';
+      this.destinoSeleccionado = params['destino'] || '';
+      this.fechaIda = params['fecha'] || '';
+      this.rangoPrecio = params['rangoPrecio'] || params['precioMaximo'] || 'Cualquiera';
       if (params['tipoViaje']) this.tipoViaje = params['tipoViaje'];
 
-      if (this.origenSeleccionado && this.destinoSeleccionado) {
-        this.ejecutarBusqueda();
-      }
+      // Ejecutar búsqueda automáticamente sin importar si viene 1 filtro, varios o ninguno
+      this.ejecutarBusqueda();
     });
   }
 
@@ -60,8 +61,22 @@ export class BuscarVuelosParametrizadosComponent implements OnInit {
     return this.ciudadesDestino.filter(c => c !== this.origenSeleccionado);
   }
 
+  onOrigenChange(): void {
+    if (this.origenSeleccionado && this.destinoSeleccionado === this.origenSeleccionado) {
+      this.destinoSeleccionado = '';
+    }
+  }
+
   limpiarFecha(): void {
     this.fechaIda = '';
+  }
+
+  limpiarFiltros(): void {
+    this.origenSeleccionado = '';
+    this.destinoSeleccionado = '';
+    this.fechaIda = '';
+    this.rangoPrecio = 'Cualquiera';
+    this.ejecutarBusqueda();
   }
 
   get minFecha(): string {
@@ -74,38 +89,94 @@ export class BuscarVuelosParametrizadosComponent implements OnInit {
     return unAno.toISOString().split('T')[0];
   }
 
+  get descripcionFiltrosActivos(): string {
+    const activos: string[] = [];
+    if (this.origenSeleccionado) activos.push(`Origen: ${this.origenSeleccionado}`);
+    if (this.destinoSeleccionado) activos.push(`Destino: ${this.destinoSeleccionado}`);
+    if (this.fechaIda) activos.push(`Fecha: ${this.fechaIda}`);
+    if (this.rangoPrecio !== 'Cualquiera') activos.push(`Rango: ${this.formatearEtiquetaRango(this.rangoPrecio)}`);
+
+    return activos.length > 0 ? activos.join(' | ') : 'Todos los vuelos programados';
+  }
+
+  private formatearEtiquetaRango(rango: string): string {
+    const mapa: Record<string, string> = {
+      '0-500000': '$0 - $500.000 COP',
+      '500000-1500000': "$500.000 - $1'500.000 COP",
+      '1500000-3000000': "$1'500.000 - $3'000.000 COP",
+      '3000000-5000000': "$3'000.000 - $5'000.000 COP",
+      '5000000-999999999': "Más de $5'000.000 COP"
+    };
+    return mapa[rango] || rango;
+  }
+
   private extraerNombreCiudad(ciudadStr: string): string {
     if (!ciudadStr) return '';
     return ciudadStr.split('(')[0].trim();
+  }
+
+  private normalizarTexto(texto: string): string {
+    return String(texto || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
+  private parsearRangoPrecio(): { min: number; max: number } | null {
+    if (!this.rangoPrecio || this.rangoPrecio === 'Cualquiera') return null;
+
+    if (this.rangoPrecio.includes('-')) {
+      const [minStr, maxStr] = this.rangoPrecio.split('-');
+      return {
+        min: Number(minStr) || 0,
+        max: Number(maxStr) || Number.MAX_SAFE_INTEGER
+      };
+    }
+
+    // Compatibilidad si viene un número único
+    const maxUnico = Number(this.rangoPrecio);
+    return isNaN(maxUnico) ? null : { min: 0, max: maxUnico };
   }
 
   ejecutarBusqueda(): void {
     this.mensajeError = '';
     this.vuelosEncontrados = [];
 
-    if (!this.origenSeleccionado || !this.destinoSeleccionado) {
-      this.mensajeError = 'Selecciona origen y destino para buscar.';
+    if (this.origenSeleccionado && this.destinoSeleccionado && this.origenSeleccionado === this.destinoSeleccionado) {
+      this.mensajeError = 'El origen y el destino no pueden ser la misma ciudad.';
       this.cdr.detectChanges();
       return;
     }
 
     const origenLimpio = this.extraerNombreCiudad(this.origenSeleccionado);
     const destinoLimpio = this.extraerNombreCiudad(this.destinoSeleccionado);
+    const rangoParsed = this.parsearRangoPrecio();
 
     const filtros: FiltrosBusqueda = {
-      origen: origenLimpio,
-      destino: destinoLimpio,
+      origen: origenLimpio || undefined,
+      destino: destinoLimpio || undefined,
       fecha: this.fechaIda || undefined,
-      precioMaximo: this.rangoPrecio !== 'Cualquiera' ? Number(this.rangoPrecio) : undefined
+      precioMaximo: rangoParsed ? rangoParsed.max : undefined
     };
 
     this.cargando = true;
     this.cdr.detectChanges();
 
-    this.vuelosService.buscarVuelosParametrizados(filtros).subscribe({
-      next: (datosBackend: any[]) => {
-        const resultadosMapeados: Vuelo[] = (datosBackend || []).map(v => {
-          let rawFecha = v.fecha || v.fechaVuelo || v.fecha_vuelo || '';
+    // Si ambos (origen y destino) están presentes, usa búsqueda parametrizada con fallback a obtenerVuelos();
+    // si falta alguno, consulta el catálogo completo para filtrar por cualquier combinación parcial.
+    const consulta$ = (origenLimpio && destinoLimpio)
+      ? this.vuelosService.buscarVuelosParametrizados(filtros).pipe(
+          catchError(() => this.vuelosService.obtenerVuelos())
+        )
+      : this.vuelosService.obtenerVuelos();
+
+    consulta$.subscribe({
+      next: (datosBackend: any) => {
+        const listaCruda = Array.isArray(datosBackend) ? datosBackend : (datosBackend?.vuelos || []);
+
+        const resultadosMapeados: Vuelo[] = listaCruda.map((v: any) => {
+          const rawFecha = v.fecha || v.fechaVuelo || v.fecha_vuelo || '';
           let fechaStr = '';
 
           if (typeof rawFecha === 'string') {
@@ -133,32 +204,45 @@ export class BuscarVuelosParametrizadosComponent implements OnInit {
           };
         });
 
+        const origenNorm = this.normalizarTexto(origenLimpio);
+        const destinoNorm = this.normalizarTexto(destinoLimpio);
+
         this.vuelosEncontrados = resultadosMapeados.filter(v => {
           const esProgramado = (v.estado || '').toLowerCase() === 'programado';
           if (!esProgramado) return false;
 
-          const vOrigen = (v.origen || '').toLowerCase();
-          const vDestino = (v.destino || '').toLowerCase();
+          // 1. Filtro de Origen (solo aplica si el usuario eligió origen)
+          if (origenNorm) {
+            const vOrigenNorm = this.normalizarTexto(v.origen);
+            if (!vOrigenNorm.includes(origenNorm)) return false;
+          }
 
-          const coincideOrigen = vOrigen.includes(origenLimpio.toLowerCase());
-          const coincideDestino = vDestino.includes(destinoLimpio.toLowerCase()) ||
-            (destinoLimpio.toLowerCase().includes('york') && vDestino.includes('york'));
+          // 2. Filtro de Destino (solo aplica si el usuario eligió destino)
+          if (destinoNorm) {
+            const vDestinoNorm = this.normalizarTexto(v.destino);
+            const coincideDestino = vDestinoNorm.includes(destinoNorm) ||
+              (destinoNorm.includes('york') && vDestinoNorm.includes('york'));
+            if (!coincideDestino) return false;
+          }
 
-          let coincideFecha = true;
-          if (this.fechaIda && v.fecha) {
+          // 3. Filtro de Fecha (solo aplica si el usuario eligió fecha)
+          if (this.fechaIda) {
             const fechaVueloStr = typeof v.fecha === 'string'
               ? (v.fecha as string).split('T')[0]
-              : new Date(v.fecha as any).toISOString().split('T')[0];
+              : (v.fecha ? new Date(v.fecha as any).toISOString().split('T')[0] : '');
 
-            coincideFecha = (fechaVueloStr === this.fechaIda);
+            if (fechaVueloStr !== this.fechaIda) return false;
           }
 
-          let coincidePrecio = true;
-          if (filtros.precioMaximo) {
-            coincidePrecio = v.precioEconomico <= filtros.precioMaximo;
+          // 4. Filtro de Rango de Precio (min <= precio <= max)
+          if (rangoParsed) {
+            const precio = Number(v.precioEconomico || 0);
+            if (precio < rangoParsed.min || precio > rangoParsed.max) {
+              return false;
+            }
           }
 
-          return coincideOrigen && coincideDestino && coincideFecha && coincidePrecio;
+          return true;
         });
 
         this.cargando = false;
@@ -173,7 +257,6 @@ export class BuscarVuelosParametrizadosComponent implements OnInit {
     });
   }
 
-  // 🟢 Método para redireccionar a Compra/Reserva evaluando sesión
   seleccionarVuelo(vuelo: Vuelo): void {
     this.mensajeError = '';
 
@@ -194,7 +277,6 @@ export class BuscarVuelosParametrizadosComponent implements OnInit {
         return;
       }
 
-      // Redirección pasando los datos estructurados del vuelo
       this.router.navigate(['/compra-reserva'], {
         state: { vuelo }
       });

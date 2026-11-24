@@ -46,7 +46,7 @@ export class HomeComponent implements OnInit {
   }
 
   onOrigenChange(): void {
-    if (this.destinoSeleccionado === this.origenSeleccionado) {
+    if (this.origenSeleccionado && this.destinoSeleccionado === this.origenSeleccionado) {
       this.destinoSeleccionado = '';
     }
   }
@@ -84,17 +84,18 @@ export class HomeComponent implements OnInit {
   buscarVuelos(): void {
     this.mensajeError = '';
 
-    // Validaciones básicas de selección
-    if (!this.origenSeleccionado || !this.destinoSeleccionado) {
-      this.mensajeError = 'Selecciona la ciudad de origen y destino.';
+    // Validar que origen y destino no sean idénticos si ambos fueron elegidos
+    if (this.origenSeleccionado && this.destinoSeleccionado && this.origenSeleccionado === this.destinoSeleccionado) {
+      this.mensajeError = 'El origen y el destino no pueden ser la misma ciudad.';
       this.cdr.detectChanges();
       return;
     }
 
+    // Validar rango de fechas solo si el usuario eligió una fecha
     if (this.fechaIda) {
-      const fechaSalidaMs = new Date(this.fechaIda).getTime();
-      const hoyMs = new Date(this.minFecha).getTime();
-      const unAnoMs = new Date(this.maxFecha).getTime();
+      const fechaSalidaMs = new Date(`${this.fechaIda}T00:00:00`).getTime();
+      const hoyMs = new Date(`${this.minFecha}T00:00:00`).getTime();
+      const unAnoMs = new Date(`${this.maxFecha}T00:00:00`).getTime();
 
       if (fechaSalidaMs < hoyMs) {
         this.mensajeError = 'No puedes seleccionar una fecha de ida anterior a hoy.';
@@ -108,13 +109,13 @@ export class HomeComponent implements OnInit {
       }
     }
 
-    // Navegación explícita redirigiendo a la ruta con queryParams
+    // Navegar enviando únicamente los filtros que el usuario haya seleccionado
     this.router.navigate(['/buscar-vuelos-parametrizados'], {
       queryParams: {
-        origen: this.origenSeleccionado,
-        destino: this.destinoSeleccionado,
+        origen: this.origenSeleccionado || null,
+        destino: this.destinoSeleccionado || null,
         fecha: this.fechaIda || null,
-        precioMaximo: this.rangoPrecio !== 'Cualquiera' ? this.rangoPrecio : null,
+        rangoPrecio: this.rangoPrecio !== 'Cualquiera' ? this.rangoPrecio : null,
         tipoViaje: this.tipoViaje
       }
     });

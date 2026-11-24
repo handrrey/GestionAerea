@@ -3,10 +3,10 @@
     
     <div class="page-header">
       <h1 class="page-title">Búsqueda Avanzada de Vuelos</h1>
-      <p class="page-subtitle">Filtra itinerarios, consulta disponibilidad de sillas y compara tarifas</p>
+      <p class="page-subtitle">Filtra por cualquier criterio individual o combinado: origen, destino, fecha o rango de tarifas</p>
     </div>
 
-    <!-- Alerta de Error (Muestra mensaje si un VISITANTE intenta reservar) -->
+    <!-- Alerta de Error -->
     <div class="alert-error" *ngIf="mensajeError">
       ⚠️ {{ mensajeError }}
     </div>
@@ -15,20 +15,20 @@
     <div class="filter-card">
       <div class="filter-grid">
         
-        <!-- Campo 1: Origen -->
+        <!-- Campo 1: Origen (Opcional) -->
         <div class="filter-group">
           <label>Origen</label>
-          <select [(ngModel)]="origenSeleccionado">
-            <option value="" disabled>Selecciona origen</option>
+          <select [(ngModel)]="origenSeleccionado" (change)="onOrigenChange()">
+            <option value="">Cualquier origen</option>
             <option *ngFor="let ciudad of ciudadesOrigen" [value]="ciudad">{{ ciudad }}</option>
           </select>
         </div>
 
-        <!-- Campo 2: Destino -->
+        <!-- Campo 2: Destino (Opcional) -->
         <div class="filter-group">
           <label>Destino</label>
           <select [(ngModel)]="destinoSeleccionado">
-            <option value="" disabled>Selecciona destino</option>
+            <option value="">Cualquier destino</option>
             <option *ngFor="let ciudad of destinosDisponibles" [value]="ciudad">{{ ciudad }}</option>
           </select>
         </div>
@@ -44,12 +44,14 @@
 
         <!-- Campo 4: Rango de Precio -->
         <div class="filter-group">
-          <label>Rango Máximo (COP)</label>
+          <label>Rango de Precio (COP)</label>
           <select [(ngModel)]="rangoPrecio">
             <option value="Cualquiera">Cualquier precio</option>
-            <option value="1000000">Hasta $1'000.000 COP</option>
-            <option value="3000000">Hasta $3'000.000 COP</option>
-            <option value="5000000">Hasta $5'000.000 COP</option>
+            <option value="60000-500000">$60.000 - $500.000 COP</option>
+            <option value="500000-1500000">$500.000 - $1'500.000 COP</option>
+            <option value="1500000-3000000">$1'500.000 - $3'000.000 COP</option>
+            <option value="3000000-5000000">$3'000.000 - $5'000.000 COP</option>
+            <option value="5000000-999999999">Más de $5'000.000 COP</option>
           </select>
         </div>
 
@@ -57,15 +59,18 @@
 
       <div class="filter-actions">
         <span class="active-filter-text">
-          Filtros activos: {{ origenSeleccionado || 'Origen' }} ➔ {{ destinoSeleccionado || 'Destino' }}
+          Filtros activos: {{ descripcionFiltrosActivos }}
         </span>
-        <button class="btn-search-apply" (click)="ejecutarBusqueda()">APLICAR FILTROS Y BUSCAR</button>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button type="button" class="btn-link-action" (click)="limpiarFiltros()">Limpiar todo</button>
+          <button class="btn-search-apply" (click)="ejecutarBusqueda()">APLICAR FILTROS Y BUSCAR</button>
+        </div>
       </div>
     </div>
 
     <!-- Encabezado de Resultados -->
     <div class="results-header" *ngIf="!cargando && vuelosEncontrados.length > 0">
-      <span class="results-count">{{ vuelosEncontrados.length }} Vuelo(s) encontrado(s) para tu ruta</span>
+      <span class="results-count">{{ vuelosEncontrados.length }} Vuelo(s) encontrado(s)</span>
     </div>
 
     <!-- Estado de Carga -->
@@ -75,7 +80,7 @@
 
     <!-- Alerta Vuelo No Encontrado -->
     <div *ngIf="!cargando && vuelosEncontrados.length === 0" class="no-results-alert">
-      ⚠️ Vuelo no encontrado o existente en estado programado.
+      ⚠️ No se encontraron vuelos programados con los filtros seleccionados.
     </div>
 
     <!-- Tarjetas de Vuelos Encontrados -->
@@ -112,7 +117,6 @@
             <span class="price-label-first-class">Primera Clase: <strong>${{ vuelo.precioPrimera | number }} COP</strong></span>
           </div>
 
-          <!-- 🟢 Botón integrado correctamente dentro del *ngFor de la tarjeta -->
           <button class="btn-add-cart" (click)="seleccionarVuelo(vuelo)">
             Seleccionar / Reservar ✈️
           </button>
